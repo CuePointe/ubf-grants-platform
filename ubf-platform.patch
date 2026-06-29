@@ -1,0 +1,3718 @@
+From 19f1d119016079f27223946378c56391d8121688 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Mon, 29 Jun 2026 17:27:25 +0000
+Subject: [PATCH] Implement complete UBF Grants Intelligence Platform
+
+All source files were empty shells. This commit builds the full application:
+
+- lib/constants.js: TEAM, THEMES, PROGRAM_WINDOWS, KBAS, STATUSES, agent system prompt
+- lib/helpers.js: daysLeft, formatDate, urgency/status/priority colours, formatCurrency
+- lib/logo_b64.js: placeholder export
+- hooks/useGrants.js: localStorage-backed grant state (add/update/delete)
+- hooks/useAgent.js: Anthropic streaming API integration with abort support
+- components/Sidebar.jsx: fixed nav sidebar with urgent badge
+- components/Notification.jsx: animated toast notifications
+- pages/LoginPage.jsx: team member selector login
+- pages/Dashboard.jsx: KPI cards, upcoming deadlines, status breakdown, high-priority alerts
+- pages/GrantTracker.jsx: full CRUD table with search/filter/sort and detail/edit views
+- pages/AgentPage.jsx: Claude-powered chat with API key management and suggested prompts
+- pages/PipelinePage.jsx: deadline-banded kanban view with pipeline value summary
+- pages/TeamPage.jsx: per-member workload cards with urgent deadline warnings
+- pages/UserGuide.jsx: sectioned staff guide with sidebar navigation
+
+Build verified: vite build passes cleanly (197 kB JS bundle).
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_011ips8CHkKuv4iiT7aFPj8S
+---
+ package-lock.json               | 1680 +++++++++++++++++++++++++++++++
+ src/components/Notification.jsx |   41 +
+ src/components/Sidebar.jsx      |  104 ++
+ src/hooks/useAgent.js           |  113 +++
+ src/hooks/useGrants.js          |   54 +
+ src/lib/constants.js            |   79 ++
+ src/lib/helpers.js              |   72 ++
+ src/lib/logo_b64.js             |    3 +-
+ src/pages/AgentPage.jsx         |  229 +++++
+ src/pages/Dashboard.jsx         |  199 ++++
+ src/pages/GrantTracker.jsx      |  402 ++++++++
+ src/pages/LoginPage.jsx         |   92 ++
+ src/pages/PipelinePage.jsx      |  174 ++++
+ src/pages/TeamPage.jsx          |  104 ++
+ src/pages/UserGuide.jsx         |  236 +++++
+ 15 files changed, 3581 insertions(+), 1 deletion(-)
+ create mode 100644 package-lock.json
+
+diff --git a/package-lock.json b/package-lock.json
+new file mode 100644
+index 0000000..6bcd777
+--- /dev/null
++++ b/package-lock.json
+@@ -0,0 +1,1680 @@
++{
++  "name": "ubf-grants-platform",
++  "version": "1.0.0",
++  "lockfileVersion": 3,
++  "requires": true,
++  "packages": {
++    "": {
++      "name": "ubf-grants-platform",
++      "version": "1.0.0",
++      "dependencies": {
++        "react": "^18.2.0",
++        "react-dom": "^18.2.0"
++      },
++      "devDependencies": {
++        "@vitejs/plugin-react": "^4.2.1",
++        "vite": "^5.0.8"
++      }
++    },
++    "node_modules/@babel/code-frame": {
++      "version": "7.29.7",
++      "resolved": "https://registry.npmjs.org/@babel/code-frame/-/code-frame-7.29.7.tgz",
++      "integrity": "sha512-Aup7aUOfpbAUg2ROOJN6Iw5f9DMBlzu0mIkm/malLQFN/YQgO48wCj0Kxa3sEHJvPVFg7siR+qRInwXd2qhQKw==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "@babel/helper-validator-identifier": "^7.29.7",
++        "js-tokens": "^4.0.0",
++        "picocolors": "^1.1.1"
++      },
++      "engines": {
++        "node": ">=6.9.0"
++      }
++    },
++    "node_modules/@babel/compat-data": {
++      "version": "7.29.7",
++      "resolved": "https://registry.npmjs.org/@babel/compat-data/-/compat-data-7.29.7.tgz",
++      "integrity": "sha512-locTkQyKvwIEgBzVrn8693ebc97F2U8ZHjbXwDXJ5Fn2TCpNwTlKcaKLkdHop5c/icOFE7qt7Q9JC5hnKNa6Gg==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": ">=6.9.0"
++      }
++    },
++    "node_modules/@babel/core": {
++      "version": "7.29.7",
++      "resolved": "https://registry.npmjs.org/@babel/core/-/core-7.29.7.tgz",
++      "integrity": "sha512-RgHBCvtjbOK2gXSNBNIkNoEc9qoVEtau3hj8gEqKQuL3HZAibKarWFEI3Lfm6EYKkLalOh8eSrj9b+ch9H/VBA==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "@babel/code-frame": "^7.29.7",
++        "@babel/generator": "^7.29.7",
++        "@babel/helper-compilation-targets": "^7.29.7",
++        "@babel/helper-module-transforms": "^7.29.7",
++        "@babel/helpers": "^7.29.7",
++        "@babel/parser": "^7.29.7",
++        "@babel/template": "^7.29.7",
++        "@babel/traverse": "^7.29.7",
++        "@babel/types": "^7.29.7",
++        "@jridgewell/remapping": "^2.3.5",
++        "convert-source-map": "^2.0.0",
++        "debug": "^4.1.0",
++        "gensync": "^1.0.0-beta.2",
++        "json5": "^2.2.3",
++        "semver": "^6.3.1"
++      },
++      "engines": {
++        "node": ">=6.9.0"
++      },
++      "funding": {
++        "type": "opencollective",
++        "url": "https://opencollective.com/babel"
++      }
++    },
++    "node_modules/@babel/generator": {
++      "version": "7.29.7",
++      "resolved": "https://registry.npmjs.org/@babel/generator/-/generator-7.29.7.tgz",
++      "integrity": "sha512-DkXD5OJQaAQIdZ1bt3UZdEnHAn9Imd3IVBdX03UFe+ony9Ojw5pzr9YVKGDY1jt+Gcn/FnGkNf8r+Vj5NOJWtQ==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "@babel/parser": "^7.29.7",
++        "@babel/types": "^7.29.7",
++        "@jridgewell/gen-mapping": "^0.3.12",
++        "@jridgewell/trace-mapping": "^0.3.28",
++        "jsesc": "^3.0.2"
++      },
++      "engines": {
++        "node": ">=6.9.0"
++      }
++    },
++    "node_modules/@babel/helper-compilation-targets": {
++      "version": "7.29.7",
++      "resolved": "https://registry.npmjs.org/@babel/helper-compilation-targets/-/helper-compilation-targets-7.29.7.tgz",
++      "integrity": "sha512-wem6WaBj4NaVYVdNhLPPVacES6ZJ+KBBfSkTMD3YZxbP3rm3Di85tJU5ljaUNhaOynt+Aj0xruhYuzQBt8n71g==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "@babel/compat-data": "^7.29.7",
++        "@babel/helper-validator-option": "^7.29.7",
++        "browserslist": "^4.24.0",
++        "lru-cache": "^5.1.1",
++        "semver": "^6.3.1"
++      },
++      "engines": {
++        "node": ">=6.9.0"
++      }
++    },
++    "node_modules/@babel/helper-globals": {
++      "version": "7.29.7",
++      "resolved": "https://registry.npmjs.org/@babel/helper-globals/-/helper-globals-7.29.7.tgz",
++      "integrity": "sha512-3nQVUAtvkKH9zahfWgw96Jc/uFOmjACE1kQz82E2lqWmHBgjzbNlsC22nuQTfahmWeQtTq5nQ/4Nnd2A1wj4zA==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": ">=6.9.0"
++      }
++    },
++    "node_modules/@babel/helper-module-imports": {
++      "version": "7.29.7",
++      "resolved": "https://registry.npmjs.org/@babel/helper-module-imports/-/helper-module-imports-7.29.7.tgz",
++      "integrity": "sha512-ejHwrQQYcm9xnTivShn2IDOlIzInN34AXskvq9QicvCtEzq1Vzclu/tKF8Jq1Cg8JG2GL6/EmjgsCT7lXepE3g==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "@babel/traverse": "^7.29.7",
++        "@babel/types": "^7.29.7"
++      },
++      "engines": {
++        "node": ">=6.9.0"
++      }
++    },
++    "node_modules/@babel/helper-module-transforms": {
++      "version": "7.29.7",
++      "resolved": "https://registry.npmjs.org/@babel/helper-module-transforms/-/helper-module-transforms-7.29.7.tgz",
++      "integrity": "sha512-UPUVSyXbOh627KiCIGQSgwWzGeBKLkaJ9PJEdrngIwMSzxLR4jS4+f1f1jb7VzBbg8nFLaYotvVPFCTqdrmTAg==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "@babel/helper-module-imports": "^7.29.7",
++        "@babel/helper-validator-identifier": "^7.29.7",
++        "@babel/traverse": "^7.29.7"
++      },
++      "engines": {
++        "node": ">=6.9.0"
++      },
++      "peerDependencies": {
++        "@babel/core": "^7.0.0"
++      }
++    },
++    "node_modules/@babel/helper-plugin-utils": {
++      "version": "7.29.7",
++      "resolved": "https://registry.npmjs.org/@babel/helper-plugin-utils/-/helper-plugin-utils-7.29.7.tgz",
++      "integrity": "sha512-G7sHYigPY17oO5SYWnfD/0MTBwVR781S/JI643e/JhUYgVgWE/61SoW3NH9KWUKyKq5LVh3npif99Wkt6j86Jw==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": ">=6.9.0"
++      }
++    },
++    "node_modules/@babel/helper-string-parser": {
++      "version": "7.29.7",
++      "resolved": "https://registry.npmjs.org/@babel/helper-string-parser/-/helper-string-parser-7.29.7.tgz",
++      "integrity": "sha512-Pb5ijPrZ89GDH8223L4UP8i6QApWxs04RbPQJTeWDV0/keR2E36MeKnyr6LYmUUvqRRI+Iv87SuF1W6ErINzYw==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": ">=6.9.0"
++      }
++    },
++    "node_modules/@babel/helper-validator-identifier": {
++      "version": "7.29.7",
++      "resolved": "https://registry.npmjs.org/@babel/helper-validator-identifier/-/helper-validator-identifier-7.29.7.tgz",
++      "integrity": "sha512-qehxGkRj55h/ff8EMaJ+cYhyaKlHIxqYDn682wQD7RNp9UujOQsHog2uS0r2vzr4pW+sXf90NeeayjcNaX3fFg==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": ">=6.9.0"
++      }
++    },
++    "node_modules/@babel/helper-validator-option": {
++      "version": "7.29.7",
++      "resolved": "https://registry.npmjs.org/@babel/helper-validator-option/-/helper-validator-option-7.29.7.tgz",
++      "integrity": "sha512-N9ZErrD+yW5geCDtBqnOoxmR8+tNKiGuxKlDpuJxfsqpa2dFcexaziGAE/qoHLiDDreVNMupxGmSoNlyvsA3gw==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": ">=6.9.0"
++      }
++    },
++    "node_modules/@babel/helpers": {
++      "version": "7.29.7",
++      "resolved": "https://registry.npmjs.org/@babel/helpers/-/helpers-7.29.7.tgz",
++      "integrity": "sha512-1k2lAGRMfHTcwuNYcCNUmaUffmQv8KWMfh2iJUUeRlwlwH4FdNG7mfPI10NPfLHJFThE4Tyr4mv7kTNZOiPuBg==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "@babel/template": "^7.29.7",
++        "@babel/types": "^7.29.7"
++      },
++      "engines": {
++        "node": ">=6.9.0"
++      }
++    },
++    "node_modules/@babel/parser": {
++      "version": "7.29.7",
++      "resolved": "https://registry.npmjs.org/@babel/parser/-/parser-7.29.7.tgz",
++      "integrity": "sha512-hnORnjP/1P/zFEndoeX+n+t1RwWRJiJpM/jO7FW32Kn9r5+sJB2JWOdYo4L6k78j15eCwY3Gm/7364B1EMwtNg==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "@babel/types": "^7.29.7"
++      },
++      "bin": {
++        "parser": "bin/babel-parser.js"
++      },
++      "engines": {
++        "node": ">=6.0.0"
++      }
++    },
++    "node_modules/@babel/plugin-transform-react-jsx-self": {
++      "version": "7.29.7",
++      "resolved": "https://registry.npmjs.org/@babel/plugin-transform-react-jsx-self/-/plugin-transform-react-jsx-self-7.29.7.tgz",
++      "integrity": "sha512-TL0hMc9xzy86VD31nUiwzd5otRAcyEPcsegCxolO0PvcXuH1v0kECe/UIznYFihpkvU5wg/jk4v0TTEFfm53fw==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "@babel/helper-plugin-utils": "^7.29.7"
++      },
++      "engines": {
++        "node": ">=6.9.0"
++      },
++      "peerDependencies": {
++        "@babel/core": "^7.0.0-0"
++      }
++    },
++    "node_modules/@babel/plugin-transform-react-jsx-source": {
++      "version": "7.29.7",
++      "resolved": "https://registry.npmjs.org/@babel/plugin-transform-react-jsx-source/-/plugin-transform-react-jsx-source-7.29.7.tgz",
++      "integrity": "sha512-06IyK09H3wi4cGbhDBwp5gUGo0IKtnYa8tyTiephirPCK6fbobVGiXMMI5zLQ4aKEYP3wZ3ArU44o+8KMrSG/Q==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "@babel/helper-plugin-utils": "^7.29.7"
++      },
++      "engines": {
++        "node": ">=6.9.0"
++      },
++      "peerDependencies": {
++        "@babel/core": "^7.0.0-0"
++      }
++    },
++    "node_modules/@babel/template": {
++      "version": "7.29.7",
++      "resolved": "https://registry.npmjs.org/@babel/template/-/template-7.29.7.tgz",
++      "integrity": "sha512-puq+Gf35oI24FeN11LkoUQFqv9uwNeWpxXZi/Ji3rRIoKAzKnxRaZ+Gkj0vKS9ZCiTESfng1N9LyOyXvo+m+Gg==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "@babel/code-frame": "^7.29.7",
++        "@babel/parser": "^7.29.7",
++        "@babel/types": "^7.29.7"
++      },
++      "engines": {
++        "node": ">=6.9.0"
++      }
++    },
++    "node_modules/@babel/traverse": {
++      "version": "7.29.7",
++      "resolved": "https://registry.npmjs.org/@babel/traverse/-/traverse-7.29.7.tgz",
++      "integrity": "sha512-EhlfNQtZ+NK22w5BM61ciuiq1m58ed33Wr1Xan//ZRTy6hgjnwyCffRYwzsGXdASJSUJ1guZILsErh1eQcl+zw==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "@babel/code-frame": "^7.29.7",
++        "@babel/generator": "^7.29.7",
++        "@babel/helper-globals": "^7.29.7",
++        "@babel/parser": "^7.29.7",
++        "@babel/template": "^7.29.7",
++        "@babel/types": "^7.29.7",
++        "debug": "^4.3.1"
++      },
++      "engines": {
++        "node": ">=6.9.0"
++      }
++    },
++    "node_modules/@babel/types": {
++      "version": "7.29.7",
++      "resolved": "https://registry.npmjs.org/@babel/types/-/types-7.29.7.tgz",
++      "integrity": "sha512-4zBIxpPzowiZpusoFkyGVwakdRJUyuH5PxQ/PrqghfdFWWasvnCdPfQXHrenDai+gyLARulZjZowCOj6fjT4pA==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "@babel/helper-string-parser": "^7.29.7",
++        "@babel/helper-validator-identifier": "^7.29.7"
++      },
++      "engines": {
++        "node": ">=6.9.0"
++      }
++    },
++    "node_modules/@esbuild/aix-ppc64": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/aix-ppc64/-/aix-ppc64-0.21.5.tgz",
++      "integrity": "sha512-1SDgH6ZSPTlggy1yI6+Dbkiz8xzpHJEVAlF/AM1tHPLsf5STom9rwtjE4hKAF20FfXXNTFqEYXyJNWh1GiZedQ==",
++      "cpu": [
++        "ppc64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "aix"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/@esbuild/android-arm": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/android-arm/-/android-arm-0.21.5.tgz",
++      "integrity": "sha512-vCPvzSjpPHEi1siZdlvAlsPxXl7WbOVUBBAowWug4rJHb68Ox8KualB+1ocNvT5fjv6wpkX6o/iEpbDrf68zcg==",
++      "cpu": [
++        "arm"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "android"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/@esbuild/android-arm64": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/android-arm64/-/android-arm64-0.21.5.tgz",
++      "integrity": "sha512-c0uX9VAUBQ7dTDCjq+wdyGLowMdtR/GoC2U5IYk/7D1H1JYC0qseD7+11iMP2mRLN9RcCMRcjC4YMclCzGwS/A==",
++      "cpu": [
++        "arm64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "android"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/@esbuild/android-x64": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/android-x64/-/android-x64-0.21.5.tgz",
++      "integrity": "sha512-D7aPRUUNHRBwHxzxRvp856rjUHRFW1SdQATKXH2hqA0kAZb1hKmi02OpYRacl0TxIGz/ZmXWlbZgjwWYaCakTA==",
++      "cpu": [
++        "x64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "android"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/@esbuild/darwin-arm64": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/darwin-arm64/-/darwin-arm64-0.21.5.tgz",
++      "integrity": "sha512-DwqXqZyuk5AiWWf3UfLiRDJ5EDd49zg6O9wclZ7kUMv2WRFr4HKjXp/5t8JZ11QbQfUS6/cRCKGwYhtNAY88kQ==",
++      "cpu": [
++        "arm64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "darwin"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/@esbuild/darwin-x64": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/darwin-x64/-/darwin-x64-0.21.5.tgz",
++      "integrity": "sha512-se/JjF8NlmKVG4kNIuyWMV/22ZaerB+qaSi5MdrXtd6R08kvs2qCN4C09miupktDitvh8jRFflwGFBQcxZRjbw==",
++      "cpu": [
++        "x64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "darwin"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/@esbuild/freebsd-arm64": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/freebsd-arm64/-/freebsd-arm64-0.21.5.tgz",
++      "integrity": "sha512-5JcRxxRDUJLX8JXp/wcBCy3pENnCgBR9bN6JsY4OmhfUtIHe3ZW0mawA7+RDAcMLrMIZaf03NlQiX9DGyB8h4g==",
++      "cpu": [
++        "arm64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "freebsd"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/@esbuild/freebsd-x64": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/freebsd-x64/-/freebsd-x64-0.21.5.tgz",
++      "integrity": "sha512-J95kNBj1zkbMXtHVH29bBriQygMXqoVQOQYA+ISs0/2l3T9/kj42ow2mpqerRBxDJnmkUDCaQT/dfNXWX/ZZCQ==",
++      "cpu": [
++        "x64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "freebsd"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/@esbuild/linux-arm": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/linux-arm/-/linux-arm-0.21.5.tgz",
++      "integrity": "sha512-bPb5AHZtbeNGjCKVZ9UGqGwo8EUu4cLq68E95A53KlxAPRmUyYv2D6F0uUI65XisGOL1hBP5mTronbgo+0bFcA==",
++      "cpu": [
++        "arm"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/@esbuild/linux-arm64": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/linux-arm64/-/linux-arm64-0.21.5.tgz",
++      "integrity": "sha512-ibKvmyYzKsBeX8d8I7MH/TMfWDXBF3db4qM6sy+7re0YXya+K1cem3on9XgdT2EQGMu4hQyZhan7TeQ8XkGp4Q==",
++      "cpu": [
++        "arm64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/@esbuild/linux-ia32": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/linux-ia32/-/linux-ia32-0.21.5.tgz",
++      "integrity": "sha512-YvjXDqLRqPDl2dvRODYmmhz4rPeVKYvppfGYKSNGdyZkA01046pLWyRKKI3ax8fbJoK5QbxblURkwK/MWY18Tg==",
++      "cpu": [
++        "ia32"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/@esbuild/linux-loong64": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/linux-loong64/-/linux-loong64-0.21.5.tgz",
++      "integrity": "sha512-uHf1BmMG8qEvzdrzAqg2SIG/02+4/DHB6a9Kbya0XDvwDEKCoC8ZRWI5JJvNdUjtciBGFQ5PuBlpEOXQj+JQSg==",
++      "cpu": [
++        "loong64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/@esbuild/linux-mips64el": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/linux-mips64el/-/linux-mips64el-0.21.5.tgz",
++      "integrity": "sha512-IajOmO+KJK23bj52dFSNCMsz1QP1DqM6cwLUv3W1QwyxkyIWecfafnI555fvSGqEKwjMXVLokcV5ygHW5b3Jbg==",
++      "cpu": [
++        "mips64el"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/@esbuild/linux-ppc64": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/linux-ppc64/-/linux-ppc64-0.21.5.tgz",
++      "integrity": "sha512-1hHV/Z4OEfMwpLO8rp7CvlhBDnjsC3CttJXIhBi+5Aj5r+MBvy4egg7wCbe//hSsT+RvDAG7s81tAvpL2XAE4w==",
++      "cpu": [
++        "ppc64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/@esbuild/linux-riscv64": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/linux-riscv64/-/linux-riscv64-0.21.5.tgz",
++      "integrity": "sha512-2HdXDMd9GMgTGrPWnJzP2ALSokE/0O5HhTUvWIbD3YdjME8JwvSCnNGBnTThKGEB91OZhzrJ4qIIxk/SBmyDDA==",
++      "cpu": [
++        "riscv64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/@esbuild/linux-s390x": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/linux-s390x/-/linux-s390x-0.21.5.tgz",
++      "integrity": "sha512-zus5sxzqBJD3eXxwvjN1yQkRepANgxE9lgOW2qLnmr8ikMTphkjgXu1HR01K4FJg8h1kEEDAqDcZQtbrRnB41A==",
++      "cpu": [
++        "s390x"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/@esbuild/linux-x64": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/linux-x64/-/linux-x64-0.21.5.tgz",
++      "integrity": "sha512-1rYdTpyv03iycF1+BhzrzQJCdOuAOtaqHTWJZCWvijKD2N5Xu0TtVC8/+1faWqcP9iBCWOmjmhoH94dH82BxPQ==",
++      "cpu": [
++        "x64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/@esbuild/netbsd-x64": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/netbsd-x64/-/netbsd-x64-0.21.5.tgz",
++      "integrity": "sha512-Woi2MXzXjMULccIwMnLciyZH4nCIMpWQAs049KEeMvOcNADVxo0UBIQPfSmxB3CWKedngg7sWZdLvLczpe0tLg==",
++      "cpu": [
++        "x64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "netbsd"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/@esbuild/openbsd-x64": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/openbsd-x64/-/openbsd-x64-0.21.5.tgz",
++      "integrity": "sha512-HLNNw99xsvx12lFBUwoT8EVCsSvRNDVxNpjZ7bPn947b8gJPzeHWyNVhFsaerc0n3TsbOINvRP2byTZ5LKezow==",
++      "cpu": [
++        "x64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "openbsd"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/@esbuild/sunos-x64": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/sunos-x64/-/sunos-x64-0.21.5.tgz",
++      "integrity": "sha512-6+gjmFpfy0BHU5Tpptkuh8+uw3mnrvgs+dSPQXQOv3ekbordwnzTVEb4qnIvQcYXq6gzkyTnoZ9dZG+D4garKg==",
++      "cpu": [
++        "x64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "sunos"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/@esbuild/win32-arm64": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/win32-arm64/-/win32-arm64-0.21.5.tgz",
++      "integrity": "sha512-Z0gOTd75VvXqyq7nsl93zwahcTROgqvuAcYDUr+vOv8uHhNSKROyU961kgtCD1e95IqPKSQKH7tBTslnS3tA8A==",
++      "cpu": [
++        "arm64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "win32"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/@esbuild/win32-ia32": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/win32-ia32/-/win32-ia32-0.21.5.tgz",
++      "integrity": "sha512-SWXFF1CL2RVNMaVs+BBClwtfZSvDgtL//G/smwAc5oVK/UPu2Gu9tIaRgFmYFFKrmg3SyAjSrElf0TiJ1v8fYA==",
++      "cpu": [
++        "ia32"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "win32"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/@esbuild/win32-x64": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/win32-x64/-/win32-x64-0.21.5.tgz",
++      "integrity": "sha512-tQd/1efJuzPC6rCFwEvLtci/xNFcTZknmXs98FYDfGE4wP9ClFV98nyKrzJKVPMhdDnjzLhdUyMX4PsQAPjwIw==",
++      "cpu": [
++        "x64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "win32"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/@jridgewell/gen-mapping": {
++      "version": "0.3.13",
++      "resolved": "https://registry.npmjs.org/@jridgewell/gen-mapping/-/gen-mapping-0.3.13.tgz",
++      "integrity": "sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "@jridgewell/sourcemap-codec": "^1.5.0",
++        "@jridgewell/trace-mapping": "^0.3.24"
++      }
++    },
++    "node_modules/@jridgewell/remapping": {
++      "version": "2.3.5",
++      "resolved": "https://registry.npmjs.org/@jridgewell/remapping/-/remapping-2.3.5.tgz",
++      "integrity": "sha512-LI9u/+laYG4Ds1TDKSJW2YPrIlcVYOwi2fUC6xB43lueCjgxV4lffOCZCtYFiH6TNOX+tQKXx97T4IKHbhyHEQ==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "@jridgewell/gen-mapping": "^0.3.5",
++        "@jridgewell/trace-mapping": "^0.3.24"
++      }
++    },
++    "node_modules/@jridgewell/resolve-uri": {
++      "version": "3.1.2",
++      "resolved": "https://registry.npmjs.org/@jridgewell/resolve-uri/-/resolve-uri-3.1.2.tgz",
++      "integrity": "sha512-bRISgCIjP20/tbWSPWMEi54QVPRZExkuD9lJL+UIxUKtwVJA8wW1Trb1jMs1RFXo1CBTNZ/5hpC9QvmKWdopKw==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": ">=6.0.0"
++      }
++    },
++    "node_modules/@jridgewell/sourcemap-codec": {
++      "version": "1.5.5",
++      "resolved": "https://registry.npmjs.org/@jridgewell/sourcemap-codec/-/sourcemap-codec-1.5.5.tgz",
++      "integrity": "sha512-cYQ9310grqxueWbl+WuIUIaiUaDcj7WOq5fVhEljNVgRfOUhY9fy2zTvfoqWsnebh8Sl70VScFbICvJnLKB0Og==",
++      "dev": true,
++      "license": "MIT"
++    },
++    "node_modules/@jridgewell/trace-mapping": {
++      "version": "0.3.31",
++      "resolved": "https://registry.npmjs.org/@jridgewell/trace-mapping/-/trace-mapping-0.3.31.tgz",
++      "integrity": "sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "@jridgewell/resolve-uri": "^3.1.0",
++        "@jridgewell/sourcemap-codec": "^1.4.14"
++      }
++    },
++    "node_modules/@rolldown/pluginutils": {
++      "version": "1.0.0-beta.27",
++      "resolved": "https://registry.npmjs.org/@rolldown/pluginutils/-/pluginutils-1.0.0-beta.27.tgz",
++      "integrity": "sha512-+d0F4MKMCbeVUJwG96uQ4SgAznZNSq93I3V+9NHA4OpvqG8mRCpGdKmK8l/dl02h2CCDHwW2FqilnTyDcAnqjA==",
++      "dev": true,
++      "license": "MIT"
++    },
++    "node_modules/@rollup/rollup-android-arm-eabi": {
++      "version": "4.62.2",
++      "resolved": "https://registry.npmjs.org/@rollup/rollup-android-arm-eabi/-/rollup-android-arm-eabi-4.62.2.tgz",
++      "integrity": "sha512-6o7ZLZK+BeenkZCFNDXqpbjw9bD6nuWonvS/lwQJp7NoVVxm6p3qE7qQ5jGuBjiFsgvqjD8mZAU5oWxTmbOeOg==",
++      "cpu": [
++        "arm"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "android"
++      ]
++    },
++    "node_modules/@rollup/rollup-android-arm64": {
++      "version": "4.62.2",
++      "resolved": "https://registry.npmjs.org/@rollup/rollup-android-arm64/-/rollup-android-arm64-4.62.2.tgz",
++      "integrity": "sha512-BaH7BllCACHoH1LguOU56UItGfUWjujlO65kS9LAodViaN4bwIKd7oeW/ZHJ/4ljr/7MIiENnNy3HJ0zXv8Zkw==",
++      "cpu": [
++        "arm64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "android"
++      ]
++    },
++    "node_modules/@rollup/rollup-darwin-arm64": {
++      "version": "4.62.2",
++      "resolved": "https://registry.npmjs.org/@rollup/rollup-darwin-arm64/-/rollup-darwin-arm64-4.62.2.tgz",
++      "integrity": "sha512-v39RCCvj4He82I9sFmk+M1VZ0PLM9sfsLVikjfx2hYBNALhrrOR2D3JjQA6AhlaSOgcR+RzrKY7e1+bT6SUO/A==",
++      "cpu": [
++        "arm64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "darwin"
++      ]
++    },
++    "node_modules/@rollup/rollup-darwin-x64": {
++      "version": "4.62.2",
++      "resolved": "https://registry.npmjs.org/@rollup/rollup-darwin-x64/-/rollup-darwin-x64-4.62.2.tgz",
++      "integrity": "sha512-yl0y2vq3S3lHeuXhEdss6TWfKW8vkujImO12tn4ZkG/4oghr09LvdYm2RElVjokTQiUvDUGXLGsYeLqUMCKpGA==",
++      "cpu": [
++        "x64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "darwin"
++      ]
++    },
++    "node_modules/@rollup/rollup-freebsd-arm64": {
++      "version": "4.62.2",
++      "resolved": "https://registry.npmjs.org/@rollup/rollup-freebsd-arm64/-/rollup-freebsd-arm64-4.62.2.tgz",
++      "integrity": "sha512-tT4pvt4qXD+vEoezupCWi+a1F0vvDiksiHc+PxRlYTOH1I6/X4id9jPxTP+Fg+545euaFT1jJVs4CEdHZAU1vw==",
++      "cpu": [
++        "arm64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "freebsd"
++      ]
++    },
++    "node_modules/@rollup/rollup-freebsd-x64": {
++      "version": "4.62.2",
++      "resolved": "https://registry.npmjs.org/@rollup/rollup-freebsd-x64/-/rollup-freebsd-x64-4.62.2.tgz",
++      "integrity": "sha512-6nU5F2wCW+qvCBhTn1pdIU3bzsIoF7EUwsCDRxilWGprQR6yd508YnH9+OKFCwpfS8pjZqDUmnCAr7exax0XCg==",
++      "cpu": [
++        "x64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "freebsd"
++      ]
++    },
++    "node_modules/@rollup/rollup-linux-arm-gnueabihf": {
++      "version": "4.62.2",
++      "resolved": "https://registry.npmjs.org/@rollup/rollup-linux-arm-gnueabihf/-/rollup-linux-arm-gnueabihf-4.62.2.tgz",
++      "integrity": "sha512-n1GJHPOvpIfhi3TmrCeh6S6URt9BFCt0KQE3qvexyGCTAKpR4Lg+eWvNZEqu7epxwus/8ElT3hacYEucm49SZg==",
++      "cpu": [
++        "arm"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "linux"
++      ]
++    },
++    "node_modules/@rollup/rollup-linux-arm-musleabihf": {
++      "version": "4.62.2",
++      "resolved": "https://registry.npmjs.org/@rollup/rollup-linux-arm-musleabihf/-/rollup-linux-arm-musleabihf-4.62.2.tgz",
++      "integrity": "sha512-JqgflS8wEB+UXV/vS1RpRbifGBeN4D5lz8D8oOFbFZw4vedvdOgCFAjfBmIMdW3yL10XpQQ0Ambepw6MXrhOnA==",
++      "cpu": [
++        "arm"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "linux"
++      ]
++    },
++    "node_modules/@rollup/rollup-linux-arm64-gnu": {
++      "version": "4.62.2",
++      "resolved": "https://registry.npmjs.org/@rollup/rollup-linux-arm64-gnu/-/rollup-linux-arm64-gnu-4.62.2.tgz",
++      "integrity": "sha512-wnFJkogWvN4jm/hQRF2UBaeUmk20j5+DmHvoyWii2b8HJDyvz1MF2OU/6ynXt2KR63rbZLWkFpoytpdc/yBuSA==",
++      "cpu": [
++        "arm64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "linux"
++      ]
++    },
++    "node_modules/@rollup/rollup-linux-arm64-musl": {
++      "version": "4.62.2",
++      "resolved": "https://registry.npmjs.org/@rollup/rollup-linux-arm64-musl/-/rollup-linux-arm64-musl-4.62.2.tgz",
++      "integrity": "sha512-HVu2bp0zhvJ8xHEV9+UUs7S90VadmBSY3LcIMvozbPo4AuMGDWlz3ymHLHZPX4hR67TKTt8Qp5PJ5RBg/i+RMQ==",
++      "cpu": [
++        "arm64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "linux"
++      ]
++    },
++    "node_modules/@rollup/rollup-linux-loong64-gnu": {
++      "version": "4.62.2",
++      "resolved": "https://registry.npmjs.org/@rollup/rollup-linux-loong64-gnu/-/rollup-linux-loong64-gnu-4.62.2.tgz",
++      "integrity": "sha512-mQqqAV8QaoSgr9I2fKDLY2BAVvmKjWoGiu/cSYQonsLvtqwEn1E4QYfnCOcp5zoEqNhsDYin1s6jx/VJmrxlZg==",
++      "cpu": [
++        "loong64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "linux"
++      ]
++    },
++    "node_modules/@rollup/rollup-linux-loong64-musl": {
++      "version": "4.62.2",
++      "resolved": "https://registry.npmjs.org/@rollup/rollup-linux-loong64-musl/-/rollup-linux-loong64-musl-4.62.2.tgz",
++      "integrity": "sha512-IxKLoxCQ2IWi6bT2akyDUBGsOImDKB+sPp4EsTmwFQ/fMwpCKm8uLSSgP/Kx/QYUgKis6SEZ5/Nlhup0DIA0PQ==",
++      "cpu": [
++        "loong64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "linux"
++      ]
++    },
++    "node_modules/@rollup/rollup-linux-ppc64-gnu": {
++      "version": "4.62.2",
++      "resolved": "https://registry.npmjs.org/@rollup/rollup-linux-ppc64-gnu/-/rollup-linux-ppc64-gnu-4.62.2.tgz",
++      "integrity": "sha512-Mk5ha2RQSgyFfmYYLkBpPnUk8D8FriBxesO1u9O75X0mHgXL1UQcH5Itl2lurWL2tj0RxV9b9tJgipac0hRY9A==",
++      "cpu": [
++        "ppc64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "linux"
++      ]
++    },
++    "node_modules/@rollup/rollup-linux-ppc64-musl": {
++      "version": "4.62.2",
++      "resolved": "https://registry.npmjs.org/@rollup/rollup-linux-ppc64-musl/-/rollup-linux-ppc64-musl-4.62.2.tgz",
++      "integrity": "sha512-CjvEnqJL/0/TQ3TXX3OPIJ/kmBellrWd4heXUmHeJlTnmwjKpSJzoehLaL6Xk0ZnMHBu9dZuFADNOrtjF4v+2w==",
++      "cpu": [
++        "ppc64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "linux"
++      ]
++    },
++    "node_modules/@rollup/rollup-linux-riscv64-gnu": {
++      "version": "4.62.2",
++      "resolved": "https://registry.npmjs.org/@rollup/rollup-linux-riscv64-gnu/-/rollup-linux-riscv64-gnu-4.62.2.tgz",
++      "integrity": "sha512-1SiZbzwdkaDURsew/tSOrooKiYy7EQGT6m8ufavAi9NEyQb/6VuIxFXAL1fqa4iZe3g4NbNk4P7J32z2tw5Mgg==",
++      "cpu": [
++        "riscv64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "linux"
++      ]
++    },
++    "node_modules/@rollup/rollup-linux-riscv64-musl": {
++      "version": "4.62.2",
++      "resolved": "https://registry.npmjs.org/@rollup/rollup-linux-riscv64-musl/-/rollup-linux-riscv64-musl-4.62.2.tgz",
++      "integrity": "sha512-nQts12zJ3NQRoE6uYljOH89v7szzLDvG2JD/vsX+vGXU8w/At1GowTZ5/7qeFQ8m7L55rpR8Okugnuo5bgjy2Q==",
++      "cpu": [
++        "riscv64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "linux"
++      ]
++    },
++    "node_modules/@rollup/rollup-linux-s390x-gnu": {
++      "version": "4.62.2",
++      "resolved": "https://registry.npmjs.org/@rollup/rollup-linux-s390x-gnu/-/rollup-linux-s390x-gnu-4.62.2.tgz",
++      "integrity": "sha512-E9/ll019jhPIJgpzfZoIkBGhcz+kKNgVWYRY0zr9srBdPPFVpvOKW8VaJKUbeK+eZXyQF9ltME+Kk6affeaPgg==",
++      "cpu": [
++        "s390x"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "linux"
++      ]
++    },
++    "node_modules/@rollup/rollup-linux-x64-gnu": {
++      "version": "4.62.2",
++      "resolved": "https://registry.npmjs.org/@rollup/rollup-linux-x64-gnu/-/rollup-linux-x64-gnu-4.62.2.tgz",
++      "integrity": "sha512-5BqxR/pshjey51iliyzTD5Xi3EN0aLmQ2lZ3lvefVV9c82BvrLo2/6OT55iifpWBufs6kdwWbuOKS841DrmK9A==",
++      "cpu": [
++        "x64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "linux"
++      ]
++    },
++    "node_modules/@rollup/rollup-linux-x64-musl": {
++      "version": "4.62.2",
++      "resolved": "https://registry.npmjs.org/@rollup/rollup-linux-x64-musl/-/rollup-linux-x64-musl-4.62.2.tgz",
++      "integrity": "sha512-uNN83XxQrRAh/w0/pmAfibcwyb6YWt4gP+dpnQKPVJshAloQ785ii8CT8ZCIxkGg9opVsvAlGhFitSm6D1Jjpg==",
++      "cpu": [
++        "x64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "linux"
++      ]
++    },
++    "node_modules/@rollup/rollup-openbsd-x64": {
++      "version": "4.62.2",
++      "resolved": "https://registry.npmjs.org/@rollup/rollup-openbsd-x64/-/rollup-openbsd-x64-4.62.2.tgz",
++      "integrity": "sha512-srjEIxSH3LRnJN6THczDHWQplqEMFiAJrTab0msUryh9kwNpkICf3Ea6q6MN/2cZwRFUNx5w+h6Hpi4QuHS6Zg==",
++      "cpu": [
++        "x64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "openbsd"
++      ]
++    },
++    "node_modules/@rollup/rollup-openharmony-arm64": {
++      "version": "4.62.2",
++      "resolved": "https://registry.npmjs.org/@rollup/rollup-openharmony-arm64/-/rollup-openharmony-arm64-4.62.2.tgz",
++      "integrity": "sha512-8hOJnxgbyObnCm5AlRA3A931xX19xq80RjVTKgJOvEKWqJruP/Uf12IbAOaDjjEXYRewwHLfmF0YRIdK3OwKWA==",
++      "cpu": [
++        "arm64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "openharmony"
++      ]
++    },
++    "node_modules/@rollup/rollup-win32-arm64-msvc": {
++      "version": "4.62.2",
++      "resolved": "https://registry.npmjs.org/@rollup/rollup-win32-arm64-msvc/-/rollup-win32-arm64-msvc-4.62.2.tgz",
++      "integrity": "sha512-mmF4AY1i0hG/bLWUctUq59gtmgaSIRa3cu/A3JFRp/sCNEme2bgDEiDS22P9FbnJB8NJNF4jPJiSP5RHQpUTDg==",
++      "cpu": [
++        "arm64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "win32"
++      ]
++    },
++    "node_modules/@rollup/rollup-win32-ia32-msvc": {
++      "version": "4.62.2",
++      "resolved": "https://registry.npmjs.org/@rollup/rollup-win32-ia32-msvc/-/rollup-win32-ia32-msvc-4.62.2.tgz",
++      "integrity": "sha512-DZgkknc6jhHrk46V25vbAM0zZkyP0nSDkJB8/dRkLTxv470dOmWDqGoEJl/9A0dFfS7yE3REOwNDxpHwSLSt0Q==",
++      "cpu": [
++        "ia32"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "win32"
++      ]
++    },
++    "node_modules/@rollup/rollup-win32-x64-gnu": {
++      "version": "4.62.2",
++      "resolved": "https://registry.npmjs.org/@rollup/rollup-win32-x64-gnu/-/rollup-win32-x64-gnu-4.62.2.tgz",
++      "integrity": "sha512-T6xr6ucWSFto+VGajA8YH26LdpHRuP4YLHEKAtCWvJDOlnmWcDZVCI2Jmjr+IFHDlt2zRaTAKE4tfjTaWLgJBg==",
++      "cpu": [
++        "x64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "win32"
++      ]
++    },
++    "node_modules/@rollup/rollup-win32-x64-msvc": {
++      "version": "4.62.2",
++      "resolved": "https://registry.npmjs.org/@rollup/rollup-win32-x64-msvc/-/rollup-win32-x64-msvc-4.62.2.tgz",
++      "integrity": "sha512-BfzEnDJOt9T8M989/lA37EcJgat01wLRnoi5dQf3QzOH7jzpqTAzdDbVfRljVr5r+jzKqpbHeyOfAaXxAd0PAA==",
++      "cpu": [
++        "x64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "win32"
++      ]
++    },
++    "node_modules/@types/babel__core": {
++      "version": "7.20.5",
++      "resolved": "https://registry.npmjs.org/@types/babel__core/-/babel__core-7.20.5.tgz",
++      "integrity": "sha512-qoQprZvz5wQFJwMDqeseRXWv3rqMvhgpbXFfVyWhbx9X47POIA6i/+dXefEmZKoAgOaTdaIgNSMqMIU61yRyzA==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "@babel/parser": "^7.20.7",
++        "@babel/types": "^7.20.7",
++        "@types/babel__generator": "*",
++        "@types/babel__template": "*",
++        "@types/babel__traverse": "*"
++      }
++    },
++    "node_modules/@types/babel__generator": {
++      "version": "7.27.0",
++      "resolved": "https://registry.npmjs.org/@types/babel__generator/-/babel__generator-7.27.0.tgz",
++      "integrity": "sha512-ufFd2Xi92OAVPYsy+P4n7/U7e68fex0+Ee8gSG9KX7eo084CWiQ4sdxktvdl0bOPupXtVJPY19zk6EwWqUQ8lg==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "@babel/types": "^7.0.0"
++      }
++    },
++    "node_modules/@types/babel__template": {
++      "version": "7.4.4",
++      "resolved": "https://registry.npmjs.org/@types/babel__template/-/babel__template-7.4.4.tgz",
++      "integrity": "sha512-h/NUaSyG5EyxBIp8YRxo4RMe2/qQgvyowRwVMzhYhBCONbW8PUsg4lkFMrhgZhUe5z3L3MiLDuvyJ/CaPa2A8A==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "@babel/parser": "^7.1.0",
++        "@babel/types": "^7.0.0"
++      }
++    },
++    "node_modules/@types/babel__traverse": {
++      "version": "7.28.0",
++      "resolved": "https://registry.npmjs.org/@types/babel__traverse/-/babel__traverse-7.28.0.tgz",
++      "integrity": "sha512-8PvcXf70gTDZBgt9ptxJ8elBeBjcLOAcOtoO/mPJjtji1+CdGbHgm77om1GrsPxsiE+uXIpNSK64UYaIwQXd4Q==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "@babel/types": "^7.28.2"
++      }
++    },
++    "node_modules/@types/estree": {
++      "version": "1.0.9",
++      "resolved": "https://registry.npmjs.org/@types/estree/-/estree-1.0.9.tgz",
++      "integrity": "sha512-GhdPgy1el4/ImP05X05Uw4cw2/M93BCUmnEvWZNStlCzEKME4Fkk+YpoA5OiHNQmoS7Cafb8Xa3Pya8m1Qrzeg==",
++      "dev": true,
++      "license": "MIT"
++    },
++    "node_modules/@vitejs/plugin-react": {
++      "version": "4.7.0",
++      "resolved": "https://registry.npmjs.org/@vitejs/plugin-react/-/plugin-react-4.7.0.tgz",
++      "integrity": "sha512-gUu9hwfWvvEDBBmgtAowQCojwZmJ5mcLn3aufeCsitijs3+f2NsrPtlAWIR6OPiqljl96GVCUbLe0HyqIpVaoA==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "@babel/core": "^7.28.0",
++        "@babel/plugin-transform-react-jsx-self": "^7.27.1",
++        "@babel/plugin-transform-react-jsx-source": "^7.27.1",
++        "@rolldown/pluginutils": "1.0.0-beta.27",
++        "@types/babel__core": "^7.20.5",
++        "react-refresh": "^0.17.0"
++      },
++      "engines": {
++        "node": "^14.18.0 || >=16.0.0"
++      },
++      "peerDependencies": {
++        "vite": "^4.2.0 || ^5.0.0 || ^6.0.0 || ^7.0.0"
++      }
++    },
++    "node_modules/baseline-browser-mapping": {
++      "version": "2.10.40",
++      "resolved": "https://registry.npmjs.org/baseline-browser-mapping/-/baseline-browser-mapping-2.10.40.tgz",
++      "integrity": "sha512-BSSLZ9/Cjjv7Gtj5B68ZzXcXUg8iOf3fme+FCuh8rC/Go+Kmh8cox7M3A8dolou16s64QjLPOSdngh7GxXvkSw==",
++      "dev": true,
++      "license": "Apache-2.0",
++      "bin": {
++        "baseline-browser-mapping": "dist/cli.cjs"
++      },
++      "engines": {
++        "node": ">=6.0.0"
++      }
++    },
++    "node_modules/browserslist": {
++      "version": "4.28.4",
++      "resolved": "https://registry.npmjs.org/browserslist/-/browserslist-4.28.4.tgz",
++      "integrity": "sha512-MTc8i/x9jBQd1iMw2CFGS+rwMa07eYjLR0CCTLDACl9xhxy+nIs3KeML/biicXtk9JrZ6dnnTatmc7ErPXIxqw==",
++      "dev": true,
++      "funding": [
++        {
++          "type": "opencollective",
++          "url": "https://opencollective.com/browserslist"
++        },
++        {
++          "type": "tidelift",
++          "url": "https://tidelift.com/funding/github/npm/browserslist"
++        },
++        {
++          "type": "github",
++          "url": "https://github.com/sponsors/ai"
++        }
++      ],
++      "license": "MIT",
++      "dependencies": {
++        "baseline-browser-mapping": "^2.10.38",
++        "caniuse-lite": "^1.0.30001799",
++        "electron-to-chromium": "^1.5.376",
++        "node-releases": "^2.0.48",
++        "update-browserslist-db": "^1.2.3"
++      },
++      "bin": {
++        "browserslist": "cli.js"
++      },
++      "engines": {
++        "node": "^6 || ^7 || ^8 || ^9 || ^10 || ^11 || ^12 || >=13.7"
++      }
++    },
++    "node_modules/caniuse-lite": {
++      "version": "1.0.30001799",
++      "resolved": "https://registry.npmjs.org/caniuse-lite/-/caniuse-lite-1.0.30001799.tgz",
++      "integrity": "sha512-hG1bReV+OUU+MOqK4t/ZWI0tZOyz3rqS9XuhOUz1cIcbwBKjOyJEJuw9ER5JuNyqxNk8u/JUVbGibBOL1yrjFw==",
++      "dev": true,
++      "funding": [
++        {
++          "type": "opencollective",
++          "url": "https://opencollective.com/browserslist"
++        },
++        {
++          "type": "tidelift",
++          "url": "https://tidelift.com/funding/github/npm/caniuse-lite"
++        },
++        {
++          "type": "github",
++          "url": "https://github.com/sponsors/ai"
++        }
++      ],
++      "license": "CC-BY-4.0"
++    },
++    "node_modules/convert-source-map": {
++      "version": "2.0.0",
++      "resolved": "https://registry.npmjs.org/convert-source-map/-/convert-source-map-2.0.0.tgz",
++      "integrity": "sha512-Kvp459HrV2FEJ1CAsi1Ku+MY3kasH19TFykTz2xWmMeq6bk2NU3XXvfJ+Q61m0xktWwt+1HSYf3JZsTms3aRJg==",
++      "dev": true,
++      "license": "MIT"
++    },
++    "node_modules/debug": {
++      "version": "4.4.3",
++      "resolved": "https://registry.npmjs.org/debug/-/debug-4.4.3.tgz",
++      "integrity": "sha512-RGwwWnwQvkVfavKVt22FGLw+xYSdzARwm0ru6DhTVA3umU5hZc28V3kO4stgYryrTlLpuvgI9GiijltAjNbcqA==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "ms": "^2.1.3"
++      },
++      "engines": {
++        "node": ">=6.0"
++      },
++      "peerDependenciesMeta": {
++        "supports-color": {
++          "optional": true
++        }
++      }
++    },
++    "node_modules/electron-to-chromium": {
++      "version": "1.5.381",
++      "resolved": "https://registry.npmjs.org/electron-to-chromium/-/electron-to-chromium-1.5.381.tgz",
++      "integrity": "sha512-n9Wa6yB+vDsGuA8AKbl/0z7HbvWqt5jxIdvr1IUicd0ryPrk7/xzwqLv8D9AbbvZ6avVNtXYLTfmgFHkwkyelg==",
++      "dev": true,
++      "license": "ISC"
++    },
++    "node_modules/esbuild": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/esbuild/-/esbuild-0.21.5.tgz",
++      "integrity": "sha512-mg3OPMV4hXywwpoDxu3Qda5xCKQi+vCTZq8S9J/EpkhB2HzKXq4SNFZE3+NK93JYxc8VMSep+lOUSC/RVKaBqw==",
++      "dev": true,
++      "hasInstallScript": true,
++      "license": "MIT",
++      "bin": {
++        "esbuild": "bin/esbuild"
++      },
++      "engines": {
++        "node": ">=12"
++      },
++      "optionalDependencies": {
++        "@esbuild/aix-ppc64": "0.21.5",
++        "@esbuild/android-arm": "0.21.5",
++        "@esbuild/android-arm64": "0.21.5",
++        "@esbuild/android-x64": "0.21.5",
++        "@esbuild/darwin-arm64": "0.21.5",
++        "@esbuild/darwin-x64": "0.21.5",
++        "@esbuild/freebsd-arm64": "0.21.5",
++        "@esbuild/freebsd-x64": "0.21.5",
++        "@esbuild/linux-arm": "0.21.5",
++        "@esbuild/linux-arm64": "0.21.5",
++        "@esbuild/linux-ia32": "0.21.5",
++        "@esbuild/linux-loong64": "0.21.5",
++        "@esbuild/linux-mips64el": "0.21.5",
++        "@esbuild/linux-ppc64": "0.21.5",
++        "@esbuild/linux-riscv64": "0.21.5",
++        "@esbuild/linux-s390x": "0.21.5",
++        "@esbuild/linux-x64": "0.21.5",
++        "@esbuild/netbsd-x64": "0.21.5",
++        "@esbuild/openbsd-x64": "0.21.5",
++        "@esbuild/sunos-x64": "0.21.5",
++        "@esbuild/win32-arm64": "0.21.5",
++        "@esbuild/win32-ia32": "0.21.5",
++        "@esbuild/win32-x64": "0.21.5"
++      }
++    },
++    "node_modules/escalade": {
++      "version": "3.2.0",
++      "resolved": "https://registry.npmjs.org/escalade/-/escalade-3.2.0.tgz",
++      "integrity": "sha512-WUj2qlxaQtO4g6Pq5c29GTcWGDyd8itL8zTlipgECz3JesAiiOKotd8JU6otB3PACgG6xkJUyVhboMS+bje/jA==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": ">=6"
++      }
++    },
++    "node_modules/fsevents": {
++      "version": "2.3.3",
++      "resolved": "https://registry.npmjs.org/fsevents/-/fsevents-2.3.3.tgz",
++      "integrity": "sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==",
++      "dev": true,
++      "hasInstallScript": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "darwin"
++      ],
++      "engines": {
++        "node": "^8.16.0 || ^10.6.0 || >=11.0.0"
++      }
++    },
++    "node_modules/gensync": {
++      "version": "1.0.0-beta.2",
++      "resolved": "https://registry.npmjs.org/gensync/-/gensync-1.0.0-beta.2.tgz",
++      "integrity": "sha512-3hN7NaskYvMDLQY55gnW3NQ+mesEAepTqlg+VEbj7zzqEMBVNhzcGYYeqFo/TlYz6eQiFcp1HcsCZO+nGgS8zg==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": ">=6.9.0"
++      }
++    },
++    "node_modules/js-tokens": {
++      "version": "4.0.0",
++      "resolved": "https://registry.npmjs.org/js-tokens/-/js-tokens-4.0.0.tgz",
++      "integrity": "sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==",
++      "license": "MIT"
++    },
++    "node_modules/jsesc": {
++      "version": "3.1.0",
++      "resolved": "https://registry.npmjs.org/jsesc/-/jsesc-3.1.0.tgz",
++      "integrity": "sha512-/sM3dO2FOzXjKQhJuo0Q173wf2KOo8t4I8vHy6lF9poUp7bKT0/NHE8fPX23PwfhnykfqnC2xRxOnVw5XuGIaA==",
++      "dev": true,
++      "license": "MIT",
++      "bin": {
++        "jsesc": "bin/jsesc"
++      },
++      "engines": {
++        "node": ">=6"
++      }
++    },
++    "node_modules/json5": {
++      "version": "2.2.3",
++      "resolved": "https://registry.npmjs.org/json5/-/json5-2.2.3.tgz",
++      "integrity": "sha512-XmOWe7eyHYH14cLdVPoyg+GOH3rYX++KpzrylJwSW98t3Nk+U8XOl8FWKOgwtzdb8lXGf6zYwDUzeHMWfxasyg==",
++      "dev": true,
++      "license": "MIT",
++      "bin": {
++        "json5": "lib/cli.js"
++      },
++      "engines": {
++        "node": ">=6"
++      }
++    },
++    "node_modules/loose-envify": {
++      "version": "1.4.0",
++      "resolved": "https://registry.npmjs.org/loose-envify/-/loose-envify-1.4.0.tgz",
++      "integrity": "sha512-lyuxPGr/Wfhrlem2CL/UcnUc1zcqKAImBDzukY7Y5F/yQiNdko6+fRLevlw1HgMySw7f611UIY408EtxRSoK3Q==",
++      "license": "MIT",
++      "dependencies": {
++        "js-tokens": "^3.0.0 || ^4.0.0"
++      },
++      "bin": {
++        "loose-envify": "cli.js"
++      }
++    },
++    "node_modules/lru-cache": {
++      "version": "5.1.1",
++      "resolved": "https://registry.npmjs.org/lru-cache/-/lru-cache-5.1.1.tgz",
++      "integrity": "sha512-KpNARQA3Iwv+jTA0utUVVbrh+Jlrr1Fv0e56GGzAFOXN7dk/FviaDW8LHmK52DlcH4WP2n6gI8vN1aesBFgo9w==",
++      "dev": true,
++      "license": "ISC",
++      "dependencies": {
++        "yallist": "^3.0.2"
++      }
++    },
++    "node_modules/ms": {
++      "version": "2.1.3",
++      "resolved": "https://registry.npmjs.org/ms/-/ms-2.1.3.tgz",
++      "integrity": "sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==",
++      "dev": true,
++      "license": "MIT"
++    },
++    "node_modules/nanoid": {
++      "version": "3.3.15",
++      "resolved": "https://registry.npmjs.org/nanoid/-/nanoid-3.3.15.tgz",
++      "integrity": "sha512-y7Wygv/7mEOvxTuEQDB8StXdMRBWf1kR/tlhAzBRUFkB2jfcLOAxO/SHmOO2zgz1pVgK29/kyupn059/bCHdjA==",
++      "dev": true,
++      "funding": [
++        {
++          "type": "github",
++          "url": "https://github.com/sponsors/ai"
++        }
++      ],
++      "license": "MIT",
++      "bin": {
++        "nanoid": "bin/nanoid.cjs"
++      },
++      "engines": {
++        "node": "^10 || ^12 || ^13.7 || ^14 || >=15.0.1"
++      }
++    },
++    "node_modules/node-releases": {
++      "version": "2.0.50",
++      "resolved": "https://registry.npmjs.org/node-releases/-/node-releases-2.0.50.tgz",
++      "integrity": "sha512-J6l92tKHX6w8Jy5nO1Vuc01NoIiRGi/d6qBKVxh+IQ8Cr3b6HbVNfKiF8ZpFKufTwpwxMmce2W3iQZ861ZRyTg==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": ">=18"
++      }
++    },
++    "node_modules/picocolors": {
++      "version": "1.1.1",
++      "resolved": "https://registry.npmjs.org/picocolors/-/picocolors-1.1.1.tgz",
++      "integrity": "sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==",
++      "dev": true,
++      "license": "ISC"
++    },
++    "node_modules/postcss": {
++      "version": "8.5.16",
++      "resolved": "https://registry.npmjs.org/postcss/-/postcss-8.5.16.tgz",
++      "integrity": "sha512-vuwillviilfKZsg0VGj5R/YwwcHx4SLsIOI/7K6mQkWx+l5cUHTjj5g0AasTBcyXsbfTgrwsUNmVUb5xVwyPwg==",
++      "dev": true,
++      "funding": [
++        {
++          "type": "opencollective",
++          "url": "https://opencollective.com/postcss/"
++        },
++        {
++          "type": "tidelift",
++          "url": "https://tidelift.com/funding/github/npm/postcss"
++        },
++        {
++          "type": "github",
++          "url": "https://github.com/sponsors/ai"
++        }
++      ],
++      "license": "MIT",
++      "dependencies": {
++        "nanoid": "^3.3.12",
++        "picocolors": "^1.1.1",
++        "source-map-js": "^1.2.1"
++      },
++      "engines": {
++        "node": "^10 || ^12 || >=14"
++      }
++    },
++    "node_modules/react": {
++      "version": "18.3.1",
++      "resolved": "https://registry.npmjs.org/react/-/react-18.3.1.tgz",
++      "integrity": "sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ==",
++      "license": "MIT",
++      "dependencies": {
++        "loose-envify": "^1.1.0"
++      },
++      "engines": {
++        "node": ">=0.10.0"
++      }
++    },
++    "node_modules/react-dom": {
++      "version": "18.3.1",
++      "resolved": "https://registry.npmjs.org/react-dom/-/react-dom-18.3.1.tgz",
++      "integrity": "sha512-5m4nQKp+rZRb09LNH59GM4BxTh9251/ylbKIbpe7TpGxfJ+9kv6BLkLBXIjjspbgbnIBNqlI23tRnTWT0snUIw==",
++      "license": "MIT",
++      "dependencies": {
++        "loose-envify": "^1.1.0",
++        "scheduler": "^0.23.2"
++      },
++      "peerDependencies": {
++        "react": "^18.3.1"
++      }
++    },
++    "node_modules/react-refresh": {
++      "version": "0.17.0",
++      "resolved": "https://registry.npmjs.org/react-refresh/-/react-refresh-0.17.0.tgz",
++      "integrity": "sha512-z6F7K9bV85EfseRCp2bzrpyQ0Gkw1uLoCel9XBVWPg/TjRj94SkJzUTGfOa4bs7iJvBWtQG0Wq7wnI0syw3EBQ==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": ">=0.10.0"
++      }
++    },
++    "node_modules/rollup": {
++      "version": "4.62.2",
++      "resolved": "https://registry.npmjs.org/rollup/-/rollup-4.62.2.tgz",
++      "integrity": "sha512-RFnrW4lhXA3s3eqHDZvN654g8OTjzRfqpIRJYczCGB6HzphckVAi/Qh4tbPUbRuDi7s1Llv8g/NspLkttY3gTA==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "@types/estree": "1.0.9"
++      },
++      "bin": {
++        "rollup": "dist/bin/rollup"
++      },
++      "engines": {
++        "node": ">=18.0.0",
++        "npm": ">=8.0.0"
++      },
++      "optionalDependencies": {
++        "@rollup/rollup-android-arm-eabi": "4.62.2",
++        "@rollup/rollup-android-arm64": "4.62.2",
++        "@rollup/rollup-darwin-arm64": "4.62.2",
++        "@rollup/rollup-darwin-x64": "4.62.2",
++        "@rollup/rollup-freebsd-arm64": "4.62.2",
++        "@rollup/rollup-freebsd-x64": "4.62.2",
++        "@rollup/rollup-linux-arm-gnueabihf": "4.62.2",
++        "@rollup/rollup-linux-arm-musleabihf": "4.62.2",
++        "@rollup/rollup-linux-arm64-gnu": "4.62.2",
++        "@rollup/rollup-linux-arm64-musl": "4.62.2",
++        "@rollup/rollup-linux-loong64-gnu": "4.62.2",
++        "@rollup/rollup-linux-loong64-musl": "4.62.2",
++        "@rollup/rollup-linux-ppc64-gnu": "4.62.2",
++        "@rollup/rollup-linux-ppc64-musl": "4.62.2",
++        "@rollup/rollup-linux-riscv64-gnu": "4.62.2",
++        "@rollup/rollup-linux-riscv64-musl": "4.62.2",
++        "@rollup/rollup-linux-s390x-gnu": "4.62.2",
++        "@rollup/rollup-linux-x64-gnu": "4.62.2",
++        "@rollup/rollup-linux-x64-musl": "4.62.2",
++        "@rollup/rollup-openbsd-x64": "4.62.2",
++        "@rollup/rollup-openharmony-arm64": "4.62.2",
++        "@rollup/rollup-win32-arm64-msvc": "4.62.2",
++        "@rollup/rollup-win32-ia32-msvc": "4.62.2",
++        "@rollup/rollup-win32-x64-gnu": "4.62.2",
++        "@rollup/rollup-win32-x64-msvc": "4.62.2",
++        "fsevents": "~2.3.2"
++      }
++    },
++    "node_modules/scheduler": {
++      "version": "0.23.2",
++      "resolved": "https://registry.npmjs.org/scheduler/-/scheduler-0.23.2.tgz",
++      "integrity": "sha512-UOShsPwz7NrMUqhR6t0hWjFduvOzbtv7toDH1/hIrfRNIDBnnBWd0CwJTGvTpngVlmwGCdP9/Zl/tVrDqcuYzQ==",
++      "license": "MIT",
++      "dependencies": {
++        "loose-envify": "^1.1.0"
++      }
++    },
++    "node_modules/semver": {
++      "version": "6.3.1",
++      "resolved": "https://registry.npmjs.org/semver/-/semver-6.3.1.tgz",
++      "integrity": "sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA==",
++      "dev": true,
++      "license": "ISC",
++      "bin": {
++        "semver": "bin/semver.js"
++      }
++    },
++    "node_modules/source-map-js": {
++      "version": "1.2.1",
++      "resolved": "https://registry.npmjs.org/source-map-js/-/source-map-js-1.2.1.tgz",
++      "integrity": "sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==",
++      "dev": true,
++      "license": "BSD-3-Clause",
++      "engines": {
++        "node": ">=0.10.0"
++      }
++    },
++    "node_modules/update-browserslist-db": {
++      "version": "1.2.3",
++      "resolved": "https://registry.npmjs.org/update-browserslist-db/-/update-browserslist-db-1.2.3.tgz",
++      "integrity": "sha512-Js0m9cx+qOgDxo0eMiFGEueWztz+d4+M3rGlmKPT+T4IS/jP4ylw3Nwpu6cpTTP8R1MAC1kF4VbdLt3ARf209w==",
++      "dev": true,
++      "funding": [
++        {
++          "type": "opencollective",
++          "url": "https://opencollective.com/browserslist"
++        },
++        {
++          "type": "tidelift",
++          "url": "https://tidelift.com/funding/github/npm/browserslist"
++        },
++        {
++          "type": "github",
++          "url": "https://github.com/sponsors/ai"
++        }
++      ],
++      "license": "MIT",
++      "dependencies": {
++        "escalade": "^3.2.0",
++        "picocolors": "^1.1.1"
++      },
++      "bin": {
++        "update-browserslist-db": "cli.js"
++      },
++      "peerDependencies": {
++        "browserslist": ">= 4.21.0"
++      }
++    },
++    "node_modules/vite": {
++      "version": "5.4.21",
++      "resolved": "https://registry.npmjs.org/vite/-/vite-5.4.21.tgz",
++      "integrity": "sha512-o5a9xKjbtuhY6Bi5S3+HvbRERmouabWbyUcpXXUA1u+GNUKoROi9byOJ8M0nHbHYHkYICiMlqxkg1KkYmm25Sw==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "esbuild": "^0.21.3",
++        "postcss": "^8.4.43",
++        "rollup": "^4.20.0"
++      },
++      "bin": {
++        "vite": "bin/vite.js"
++      },
++      "engines": {
++        "node": "^18.0.0 || >=20.0.0"
++      },
++      "funding": {
++        "url": "https://github.com/vitejs/vite?sponsor=1"
++      },
++      "optionalDependencies": {
++        "fsevents": "~2.3.3"
++      },
++      "peerDependencies": {
++        "@types/node": "^18.0.0 || >=20.0.0",
++        "less": "*",
++        "lightningcss": "^1.21.0",
++        "sass": "*",
++        "sass-embedded": "*",
++        "stylus": "*",
++        "sugarss": "*",
++        "terser": "^5.4.0"
++      },
++      "peerDependenciesMeta": {
++        "@types/node": {
++          "optional": true
++        },
++        "less": {
++          "optional": true
++        },
++        "lightningcss": {
++          "optional": true
++        },
++        "sass": {
++          "optional": true
++        },
++        "sass-embedded": {
++          "optional": true
++        },
++        "stylus": {
++          "optional": true
++        },
++        "sugarss": {
++          "optional": true
++        },
++        "terser": {
++          "optional": true
++        }
++      }
++    },
++    "node_modules/yallist": {
++      "version": "3.1.1",
++      "resolved": "https://registry.npmjs.org/yallist/-/yallist-3.1.1.tgz",
++      "integrity": "sha512-a4UGQaWPH59mOXUYnAG2ewncQS4i4F43Tv3JoAM+s2VDAmS9NsK8GpDMLrCHPksFT7h3K6TOoUNn2pb7RoXx4g==",
++      "dev": true,
++      "license": "ISC"
++    }
++  }
++}
+diff --git a/src/components/Notification.jsx b/src/components/Notification.jsx
+index 8b13789..151173f 100644
+--- a/src/components/Notification.jsx
++++ b/src/components/Notification.jsx
+@@ -1 +1,42 @@
++import React, { useEffect, useState } from 'react'
+ 
++const COLORS = {
++  success: { bg: '#22c55e', icon: '✓' },
++  warn:    { bg: '#f97316', icon: '!' },
++  error:   { bg: '#ef4444', icon: '✕' },
++  info:    { bg: '#3b82f6', icon: 'i' },
++}
++
++export default function Notification({ message, type = 'success', onDone }) {
++  const [visible, setVisible] = useState(true)
++  const { bg, icon } = COLORS[type] || COLORS.info
++
++  useEffect(() => {
++    const hide = setTimeout(() => setVisible(false), 3200)
++    const done = setTimeout(onDone, 3600)
++    return () => { clearTimeout(hide); clearTimeout(done) }
++  }, [onDone])
++
++  return (
++    <div style={{
++      position: 'fixed', bottom: 24, right: 24, zIndex: 9999,
++      display: 'flex', alignItems: 'center', gap: 10,
++      background: bg, color: '#fff',
++      padding: '12px 18px', borderRadius: 10,
++      boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
++      fontSize: 13, fontWeight: 500,
++      opacity: visible ? 1 : 0,
++      transform: visible ? 'translateX(0)' : 'translateX(24px)',
++      transition: 'opacity 0.35s ease, transform 0.35s ease',
++      maxWidth: 320,
++    }}>
++      <span style={{
++        width: 22, height: 22, borderRadius: '50%',
++        background: 'rgba(255,255,255,0.25)',
++        display: 'flex', alignItems: 'center', justifyContent: 'center',
++        fontSize: 12, fontWeight: 700, flexShrink: 0,
++      }}>{icon}</span>
++      <span>{message}</span>
++    </div>
++  )
++}
+diff --git a/src/components/Sidebar.jsx b/src/components/Sidebar.jsx
+index 8b13789..60f260a 100644
+--- a/src/components/Sidebar.jsx
++++ b/src/components/Sidebar.jsx
+@@ -1 +1,105 @@
++import React from 'react'
+ 
++const NAV = [
++  { id: 'dashboard', label: 'Dashboard',    icon: '⊞' },
++  { id: 'grants',    label: 'Grant Tracker', icon: '📋' },
++  { id: 'agent',     label: 'AI Agent',      icon: '🤖' },
++  { id: 'pipeline',  label: 'Pipeline',      icon: '📅' },
++  { id: 'team',      label: 'Team View',     icon: '👥' },
++  { id: 'guide',     label: 'User Guide',    icon: '📖' },
++]
++
++export default function Sidebar({ tab, onTab, user, onSwitch, urgentCount }) {
++  return (
++    <aside style={{
++      width: 220,
++      background: '#1a6b3c',
++      color: '#fff',
++      display: 'flex',
++      flexDirection: 'column',
++      position: 'fixed',
++      top: 0, left: 0, bottom: 0,
++      zIndex: 100,
++    }}>
++      {/* Logo / brand */}
++      <div style={{ padding: '20px 16px 12px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
++        <div style={{ fontWeight: 800, fontSize: 15, letterSpacing: 0.3 }}>🌿 UBF Grants</div>
++        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 2 }}>
++          Intelligence Platform
++        </div>
++      </div>
++
++      {/* Nav */}
++      <nav style={{ flex: 1, padding: '12px 8px', overflowY: 'auto' }}>
++        {NAV.map(({ id, label, icon }) => {
++          const active = tab === id
++          const showBadge = id === 'pipeline' && urgentCount > 0
++          return (
++            <button
++              key={id}
++              onClick={() => onTab(id)}
++              style={{
++                width: '100%',
++                display: 'flex',
++                alignItems: 'center',
++                gap: 10,
++                padding: '9px 12px',
++                borderRadius: 8,
++                border: 'none',
++                background: active ? 'rgba(255,255,255,0.15)' : 'transparent',
++                color: active ? '#fff' : 'rgba(255,255,255,0.72)',
++                fontWeight: active ? 600 : 400,
++                fontSize: 13,
++                cursor: 'pointer',
++                marginBottom: 2,
++                textAlign: 'left',
++                transition: 'background 0.15s',
++                position: 'relative',
++              }}
++            >
++              <span style={{ fontSize: 15 }}>{icon}</span>
++              <span style={{ flex: 1 }}>{label}</span>
++              {showBadge && (
++                <span style={{
++                  background: '#ef4444',
++                  color: '#fff',
++                  fontSize: 10,
++                  fontWeight: 700,
++                  padding: '1px 5px',
++                  borderRadius: 10,
++                  minWidth: 18,
++                  textAlign: 'center',
++                }}>{urgentCount}</span>
++              )}
++            </button>
++          )
++        })}
++      </nav>
++
++      {/* User info */}
++      <div style={{
++        padding: '12px 16px',
++        borderTop: '1px solid rgba(255,255,255,0.1)',
++        fontSize: 12,
++      }}>
++        <div style={{ fontWeight: 600, marginBottom: 2 }}>{user?.name}</div>
++        <div style={{ color: 'rgba(255,255,255,0.55)', marginBottom: 8, fontSize: 11 }}>{user?.role}</div>
++        <button
++          onClick={onSwitch}
++          style={{
++            background: 'rgba(255,255,255,0.1)',
++            border: 'none',
++            color: 'rgba(255,255,255,0.8)',
++            borderRadius: 6,
++            padding: '5px 10px',
++            fontSize: 11,
++            cursor: 'pointer',
++            width: '100%',
++          }}
++        >
++          Switch User
++        </button>
++      </div>
++    </aside>
++  )
++}
+diff --git a/src/hooks/useAgent.js b/src/hooks/useAgent.js
+index 8b13789..f8b007b 100644
+--- a/src/hooks/useAgent.js
++++ b/src/hooks/useAgent.js
+@@ -1 +1,114 @@
++import { useState, useCallback, useRef } from 'react'
++import { AGENT_SYSTEM_PROMPT } from '../lib/constants.js'
+ 
++export function useAgent(grants) {
++  const [messages, setMessages] = useState([])
++  const [streaming, setStreaming] = useState(false)
++  const [error, setError] = useState(null)
++  const abortRef = useRef(null)
++
++  const buildContext = useCallback(() => {
++    if (!grants || grants.length === 0) return ''
++    const summary = grants.slice(0, 20).map(g =>
++      `- ${g.name} | ${g.donor || 'Unknown donor'} | Deadline: ${g.deadline || 'TBD'} | Status: ${g.status} | Priority: ${g.priority}`
++    ).join('\n')
++    return `\n\nCurrent UBF grants pipeline (${grants.length} total):\n${summary}`
++  }, [grants])
++
++  const sendMessage = useCallback(async (userText, apiKey) => {
++    if (!userText.trim() || streaming) return
++
++    if (!apiKey) {
++      setError('No API key provided. Enter your Anthropic API key in the settings panel.')
++      return
++    }
++
++    const userMsg = { role: 'user', content: userText }
++    const newMessages = [...messages, userMsg]
++    setMessages(newMessages)
++    setStreaming(true)
++    setError(null)
++
++    const systemPrompt = AGENT_SYSTEM_PROMPT + buildContext()
++
++    const assistantMsg = { role: 'assistant', content: '' }
++    setMessages(prev => [...prev, assistantMsg])
++
++    try {
++      const controller = new AbortController()
++      abortRef.current = controller
++
++      const response = await fetch('https://api.anthropic.com/v1/messages', {
++        method: 'POST',
++        signal: controller.signal,
++        headers: {
++          'Content-Type': 'application/json',
++          'x-api-key': apiKey,
++          'anthropic-version': '2023-06-01',
++          'anthropic-dangerous-direct-browser-access': 'true',
++        },
++        body: JSON.stringify({
++          model: 'claude-sonnet-4-6',
++          max_tokens: 2048,
++          stream: true,
++          system: systemPrompt,
++          messages: newMessages,
++        }),
++      })
++
++      if (!response.ok) {
++        const err = await response.json().catch(() => ({}))
++        throw new Error(err?.error?.message || `API error ${response.status}`)
++      }
++
++      const reader = response.body.getReader()
++      const decoder = new TextDecoder()
++      let buffer = ''
++
++      while (true) {
++        const { done, value } = await reader.read()
++        if (done) break
++        buffer += decoder.decode(value, { stream: true })
++        const lines = buffer.split('\n')
++        buffer = lines.pop()
++
++        for (const line of lines) {
++          if (!line.startsWith('data: ')) continue
++          const data = line.slice(6).trim()
++          if (data === '[DONE]') continue
++          try {
++            const event = JSON.parse(data)
++            if (event.type === 'content_block_delta' && event.delta?.type === 'text_delta') {
++              setMessages(prev => {
++                const updated = [...prev]
++                const last = updated[updated.length - 1]
++                updated[updated.length - 1] = { ...last, content: last.content + event.delta.text }
++                return updated
++              })
++            }
++          } catch {
++            // malformed SSE line — skip
++          }
++        }
++      }
++    } catch (err) {
++      if (err.name === 'AbortError') return
++      setError(err.message)
++      setMessages(prev => prev.slice(0, -1))
++    } finally {
++      setStreaming(false)
++      abortRef.current = null
++    }
++  }, [messages, streaming, buildContext])
++
++  const stopStreaming = useCallback(() => {
++    abortRef.current?.abort()
++  }, [])
++
++  const clearMessages = useCallback(() => {
++    setMessages([])
++    setError(null)
++  }, [])
++
++  return { messages, streaming, error, sendMessage, stopStreaming, clearMessages }
++}
+diff --git a/src/hooks/useGrants.js b/src/hooks/useGrants.js
+index 8b13789..8123adf 100644
+--- a/src/hooks/useGrants.js
++++ b/src/hooks/useGrants.js
+@@ -1 +1,55 @@
++import { useState, useCallback, useEffect } from 'react'
++import { generateId } from '../lib/helpers.js'
+ 
++const STORAGE_KEY = 'ubf_grants_v1'
++
++function loadGrants() {
++  try {
++    const raw = localStorage.getItem(STORAGE_KEY)
++    return raw ? JSON.parse(raw) : []
++  } catch {
++    return []
++  }
++}
++
++function saveGrants(grants) {
++  try {
++    localStorage.setItem(STORAGE_KEY, JSON.stringify(grants))
++  } catch {
++    // storage full or unavailable
++  }
++}
++
++export function useGrants() {
++  const [grants, setGrants] = useState(loadGrants)
++
++  useEffect(() => {
++    saveGrants(grants)
++  }, [grants])
++
++  const addGrant = useCallback((data) => {
++    const grant = {
++      id: generateId(),
++      createdAt: new Date().toISOString(),
++      updatedAt: new Date().toISOString(),
++      status: 'Not Started',
++      priority: 'medium',
++      themes: [],
++      ...data,
++    }
++    setGrants(prev => [grant, ...prev])
++    return grant
++  }, [])
++
++  const updateGrant = useCallback((id, patch) => {
++    setGrants(prev =>
++      prev.map(g => g.id === id ? { ...g, ...patch, updatedAt: new Date().toISOString() } : g)
++    )
++  }, [])
++
++  const deleteGrant = useCallback((id) => {
++    setGrants(prev => prev.filter(g => g.id !== id))
++  }, [])
++
++  return { grants, addGrant, updateGrant, deleteGrant }
++}
+diff --git a/src/lib/constants.js b/src/lib/constants.js
+index 8b13789..0bead4e 100644
+--- a/src/lib/constants.js
++++ b/src/lib/constants.js
+@@ -1 +1,80 @@
++export const TEAM = [
++  { id: 'i.amani',      name: 'I. Amani',      role: 'Executive Director',       email: 'i.amani@ugandabiodiversityfund.org' },
++  { id: 'w.nabatanzi',  name: 'W. Nabatanzi',  role: 'Finance and Admin Manager', email: 'w.nabatanzi@ugandabiodiversityfund.org' },
++  { id: 'p.musiime',    name: 'P. Musiime',    role: 'Programs Officer',          email: 'p.musiime@ugandabiodiversityfund.org' },
++  { id: 'd.okullu',     name: 'D. Okullu',     role: 'M&E Officer',               email: 'd.okullu@ugandabiodiversityfund.org' },
++  { id: 'o.atuhaire',   name: 'O. Atuhaire',   role: 'Project Officer',           email: 'o.atuhaire@ugandabiodiversityfund.org' },
++  { id: 's.abonyo',     name: 'S. Abonyo',     role: 'Administration Officer',    email: 's.abonyo@ugandabiodiversityfund.org' },
++  { id: 't.otieno',     name: 'T. Otieno',     role: 'Office Assistant',          email: 't.otieno@biodiversityfund.org' },
++]
+ 
++export const THEMES = [
++  'Reducing Degradation of Biodiversity',
++  'Climate Change Resilience and Adaptation',
++  'Community Livelihoods and Inclusion',
++]
++
++export const PROGRAM_WINDOWS = [
++  'Nature Finance and Markets',
++  'Resilient Landscapes and Catchments',
++  'Nature-Positive Food Systems',
++  'Circular Economy and Green Cities',
++  'One Health and Bioeconomy',
++]
++
++export const KBAS = [
++  'Bwindi Impenetrable NP',
++  'Mgahinga Gorilla NP',
++  'Queen Elizabeth NP',
++  'Murchison Falls NP',
++  'Kibale NP',
++  'Mount Elgon NP',
++  'Lake Victoria Basin',
++  'Albertine Rift',
++  'Rwenzori Mountains',
++  'Kidepo Valley NP',
++]
++
++export const STATUSES = [
++  'Not Started',
++  'In Progress',
++  'Submitted',
++  'Under Review',
++  'Awarded',
++  'Rejected',
++  'On Hold',
++]
++
++export const PRIORITIES = ['high', 'medium', 'low']
++
++export const GEO_OPTIONS = [
++  'Uganda-wide',
++  'Albertine Rift',
++  'Lake Victoria Basin',
++  'Northern Uganda',
++  'Eastern Uganda',
++  'Western Uganda',
++  'Central Uganda',
++  'Mount Elgon Region',
++]
++
++export const AGENT_SYSTEM_PROMPT = `You are the UBF Grants Intelligence Agent for the Uganda Biodiversity Fund (UBF). You are a knowledgeable, strategic, and helpful assistant specialising in biodiversity grants, conservation funding, and environmental finance in East Africa and globally.
++
++UBF's mission is biodiversity conservation and sustainable livelihoods in Uganda. Their Biodiversity Funding Program V4 (January 2026) has three thematic priorities:
++1. Reducing Degradation of Biodiversity — KBA restoration, wildlife, wetlands, circular economy
++2. Climate Change Resilience and Adaptation — SLM, agroforestry, nature-based solutions, carbon markets
++3. Community Livelihoods and Inclusion — eco-tourism, beekeeping, non-timber products, women and youth
++
++Program Windows: Nature Finance and Markets | Resilient Landscapes and Catchments | Nature-Positive Food Systems | Circular Economy and Green Cities | One Health and Bioeconomy
++
++Key Biodiversity Areas include: Bwindi Impenetrable NP, Mgahinga Gorilla NP, Queen Elizabeth NP, Murchison Falls NP, Kibale NP, Mount Elgon NP, Lake Victoria Basin, Albertine Rift, Rwenzori Mountains, Kidepo Valley NP.
++
++You help the UBF grants team to:
++- Discover new grant opportunities aligned with UBF priorities
++- Analyse grant requirements and fit with UBF's work
++- Draft sections of grant proposals and concept notes
++- Advise on grant strategy, deadlines, and pipeline management
++- Provide intelligence on funders active in East African conservation
++- Suggest partnerships, approaches, and thematic angles
++
++Be concise, practical, and actionable. When discussing grants, mention amounts, deadlines, and fit with UBF themes where possible. Always tailor advice to the Ugandan biodiversity context.`
+diff --git a/src/lib/helpers.js b/src/lib/helpers.js
+index 8b13789..0bc9870 100644
+--- a/src/lib/helpers.js
++++ b/src/lib/helpers.js
+@@ -1 +1,73 @@
++export function daysLeft(dateStr) {
++  if (!dateStr) return null
++  const deadline = new Date(dateStr)
++  if (isNaN(deadline)) return null
++  const now = new Date()
++  now.setHours(0, 0, 0, 0)
++  deadline.setHours(0, 0, 0, 0)
++  return Math.round((deadline - now) / (1000 * 60 * 60 * 24))
++}
+ 
++export function formatDate(dateStr) {
++  if (!dateStr) return '—'
++  const d = new Date(dateStr)
++  if (isNaN(d)) return dateStr
++  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
++}
++
++export function urgencyColor(days) {
++  if (days === null) return '#94a3b8'
++  if (days < 0)  return '#94a3b8'
++  if (days <= 7)  return '#ef4444'
++  if (days <= 21) return '#f97316'
++  if (days <= 60) return '#eab308'
++  return '#22c55e'
++}
++
++export function urgencyLabel(days) {
++  if (days === null) return 'No deadline'
++  if (days < 0)   return 'Overdue'
++  if (days === 0) return 'Today!'
++  if (days === 1) return '1 day left'
++  if (days <= 7)  return `${days} days left`
++  if (days <= 21) return `${days} days left`
++  return `${days} days`
++}
++
++export function statusColor(status) {
++  const map = {
++    'Not Started':  '#94a3b8',
++    'In Progress':  '#3b82f6',
++    'Submitted':    '#8b5cf6',
++    'Under Review': '#f59e0b',
++    'Awarded':      '#22c55e',
++    'Rejected':     '#ef4444',
++    'On Hold':      '#6b7280',
++  }
++  return map[status] || '#94a3b8'
++}
++
++export function priorityColor(priority) {
++  const map = { high: '#ef4444', medium: '#f59e0b', low: '#22c55e' }
++  return map[priority] || '#94a3b8'
++}
++
++export function formatCurrency(value) {
++  if (!value && value !== 0) return '—'
++  if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`
++  if (value >= 1_000)     return `$${(value / 1_000).toFixed(0)}K`
++  return `$${value}`
++}
++
++export function generateId() {
++  return Date.now().toString(36) + Math.random().toString(36).slice(2)
++}
++
++export function sortByDeadline(grants) {
++  return [...grants].sort((a, b) => {
++    if (!a.deadline && !b.deadline) return 0
++    if (!a.deadline) return 1
++    if (!b.deadline) return -1
++    return new Date(a.deadline) - new Date(b.deadline)
++  })
++}
+diff --git a/src/lib/logo_b64.js b/src/lib/logo_b64.js
+index 8b13789..6e9d66c 100644
+--- a/src/lib/logo_b64.js
++++ b/src/lib/logo_b64.js
+@@ -1 +1,2 @@
+-
++// UBF logo placeholder — replace with actual base64 logo if available
++export const LOGO_B64 = null
+diff --git a/src/pages/AgentPage.jsx b/src/pages/AgentPage.jsx
+index 8b13789..699dfdb 100644
+--- a/src/pages/AgentPage.jsx
++++ b/src/pages/AgentPage.jsx
+@@ -1 +1,230 @@
++import React, { useState, useRef, useEffect } from 'react'
+ 
++const STORAGE_KEY = 'ubf_agent_apikey'
++
++function MessageBubble({ msg }) {
++  const isUser = msg.role === 'user'
++  return (
++    <div style={{
++      display: 'flex',
++      justifyContent: isUser ? 'flex-end' : 'flex-start',
++      marginBottom: 14,
++      animation: 'fadeIn 0.2s ease',
++    }}>
++      {!isUser && (
++        <div style={{
++          width: 30, height: 30, borderRadius: '50%',
++          background: '#1a6b3c', color: '#fff',
++          display: 'flex', alignItems: 'center', justifyContent: 'center',
++          fontSize: 14, flexShrink: 0, marginRight: 8, marginTop: 2,
++        }}>🤖</div>
++      )}
++      <div style={{
++        maxWidth: '72%',
++        padding: '12px 16px',
++        borderRadius: isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
++        background: isUser ? '#1a6b3c' : '#fff',
++        color: isUser ? '#fff' : '#1e293b',
++        fontSize: 13,
++        lineHeight: 1.65,
++        boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
++        whiteSpace: 'pre-wrap',
++        wordBreak: 'break-word',
++      }}>
++        {msg.content || <span style={{ opacity: 0.5 }} className="pulse">●●●</span>}
++      </div>
++    </div>
++  )
++}
++
++const SUGGESTIONS = [
++  'Search for biodiversity grants open to Uganda-based NGOs right now',
++  'What EU funding opportunities are there for climate adaptation in East Africa?',
++  'Help me write a concept note summary for a KBA restoration project',
++  'Which funders focus on nature-based livelihoods and women\'s inclusion?',
++  'Review our grant pipeline and advise on strategic priorities',
++  'What is the GEF Small Grants Programme and how do we apply?',
++]
++
++export default function AgentPage({ grants, user, agent }) {
++  const { messages, streaming, error, sendMessage, stopStreaming, clearMessages } = agent
++  const [input, setInput] = useState('')
++  const [apiKey, setApiKey] = useState(() => localStorage.getItem(STORAGE_KEY) || '')
++  const [showSettings, setShowSettings] = useState(false)
++  const [keyDraft, setKeyDraft] = useState('')
++  const bottomRef = useRef(null)
++  const inputRef = useRef(null)
++
++  useEffect(() => {
++    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
++  }, [messages])
++
++  const handleSend = () => {
++    if (!input.trim() || streaming) return
++    sendMessage(input.trim(), apiKey)
++    setInput('')
++  }
++
++  const handleKey = (e) => {
++    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() }
++  }
++
++  const saveKey = () => {
++    localStorage.setItem(STORAGE_KEY, keyDraft)
++    setApiKey(keyDraft)
++    setShowSettings(false)
++  }
++
++  return (
++    <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 56px)', animation: 'fadeIn 0.25s ease' }}>
++      {/* Header */}
++      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
++        <div>
++          <h1 style={{ fontSize: 20, fontWeight: 800, color: '#1a6b3c' }}>AI Grants Agent</h1>
++          <p style={{ fontSize: 13, color: '#64748b', marginTop: 2 }}>
++            Powered by Claude — grant discovery, strategy, and proposal support
++          </p>
++        </div>
++        <div style={{ display: 'flex', gap: 8 }}>
++          {messages.length > 0 && (
++            <button
++              onClick={clearMessages}
++              style={{ padding: '7px 14px', borderRadius: 7, border: '1.5px solid #e2e8f0', background: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
++            >Clear Chat</button>
++          )}
++          <button
++            onClick={() => { setKeyDraft(apiKey); setShowSettings(s => !s) }}
++            style={{
++              padding: '7px 14px', borderRadius: 7, border: '1.5px solid #e2e8f0',
++              background: apiKey ? '#f0fdf4' : '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer',
++              color: apiKey ? '#1a6b3c' : '#64748b',
++            }}
++          >
++            {apiKey ? '🔑 API Key Set' : '⚙ Set API Key'}
++          </button>
++        </div>
++      </div>
++
++      {/* API key settings panel */}
++      {showSettings && (
++        <div style={{ background: '#fff', borderRadius: 10, padding: 16, marginBottom: 14, boxShadow: '0 1px 4px rgba(0,0,0,0.08)', animation: 'fadeIn 0.2s ease' }}>
++          <p style={{ fontSize: 12, color: '#64748b', marginBottom: 8 }}>
++            Enter your Anthropic API key. It is stored locally in your browser only.
++          </p>
++          <div style={{ display: 'flex', gap: 8 }}>
++            <input
++              type="password"
++              value={keyDraft}
++              onChange={e => setKeyDraft(e.target.value)}
++              placeholder="sk-ant-..."
++              style={{ flex: 1 }}
++            />
++            <button onClick={saveKey} style={{
++              padding: '8px 16px', borderRadius: 7, border: 'none',
++              background: '#1a6b3c', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer',
++              whiteSpace: 'nowrap',
++            }}>Save Key</button>
++          </div>
++          {apiKey && (
++            <button
++              onClick={() => { localStorage.removeItem(STORAGE_KEY); setApiKey(''); setKeyDraft(''); setShowSettings(false) }}
++              style={{ marginTop: 8, fontSize: 11, color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}
++            >Remove API key</button>
++          )}
++        </div>
++      )}
++
++      {/* Chat area */}
++      <div style={{
++        flex: 1, overflowY: 'auto', background: '#f8fafc', borderRadius: 12,
++        padding: '16px', marginBottom: 12,
++        border: '1px solid #f1f5f9',
++      }}>
++        {messages.length === 0 ? (
++          <div style={{ padding: '20px 0' }}>
++            <div style={{ textAlign: 'center', marginBottom: 24 }}>
++              <div style={{ fontSize: 40, marginBottom: 8 }}>🤖</div>
++              <p style={{ fontWeight: 600, fontSize: 14, color: '#1a6b3c' }}>UBF Grants Intelligence Agent</p>
++              <p style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>
++                Ask me anything about grants, funding, proposals, or strategy.
++              </p>
++              {!apiKey && (
++                <div style={{
++                  marginTop: 12, padding: '10px 16px', background: '#fff7ed',
++                  borderRadius: 8, border: '1px solid #fed7aa', fontSize: 12, color: '#92400e',
++                }}>
++                  ⚠️ Set your Anthropic API key above to start chatting
++                </div>
++              )}
++            </div>
++
++            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
++              {SUGGESTIONS.map((s, i) => (
++                <button
++                  key={i}
++                  onClick={() => { setInput(s); inputRef.current?.focus() }}
++                  style={{
++                    padding: '10px 14px', borderRadius: 8,
++                    border: '1.5px solid #e2e8f0', background: '#fff',
++                    fontSize: 12, color: '#334155', textAlign: 'left',
++                    cursor: 'pointer', lineHeight: 1.5,
++                    transition: 'border-color 0.15s',
++                  }}
++                  onMouseEnter={e => e.currentTarget.style.borderColor = '#1a6b3c'}
++                  onMouseLeave={e => e.currentTarget.style.borderColor = '#e2e8f0'}
++                >
++                  {s}
++                </button>
++              ))}
++            </div>
++          </div>
++        ) : (
++          <div>
++            {messages.map((m, i) => <MessageBubble key={i} msg={m} />)}
++            {error && (
++              <div style={{ padding: '10px 14px', background: '#fef2f2', borderRadius: 8, border: '1px solid #fee2e2', fontSize: 12, color: '#991b1b', marginTop: 8 }}>
++                ⚠️ {error}
++              </div>
++            )}
++            <div ref={bottomRef} />
++          </div>
++        )}
++      </div>
++
++      {/* Input */}
++      <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
++        <textarea
++          ref={inputRef}
++          value={input}
++          onChange={e => setInput(e.target.value)}
++          onKeyDown={handleKey}
++          placeholder="Ask about grants, funding opportunities, proposal help..."
++          rows={2}
++          style={{ flex: 1, resize: 'none', borderRadius: 10, padding: '10px 14px' }}
++          disabled={streaming}
++        />
++        {streaming ? (
++          <button
++            onClick={stopStreaming}
++            style={{
++              padding: '10px 18px', borderRadius: 8, border: 'none',
++              background: '#f97316', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer',
++            }}
++          >Stop</button>
++        ) : (
++          <button
++            onClick={handleSend}
++            disabled={!input.trim() || !apiKey}
++            style={{
++              padding: '10px 18px', borderRadius: 8, border: 'none',
++              background: input.trim() && apiKey ? '#1a6b3c' : '#e2e8f0',
++              color: input.trim() && apiKey ? '#fff' : '#94a3b8',
++              fontSize: 13, fontWeight: 600,
++              cursor: input.trim() && apiKey ? 'pointer' : 'not-allowed',
++            }}
++          >Send</button>
++        )}
++      </div>
++    </div>
++  )
++}
+diff --git a/src/pages/Dashboard.jsx b/src/pages/Dashboard.jsx
+index 8b13789..574b425 100644
+--- a/src/pages/Dashboard.jsx
++++ b/src/pages/Dashboard.jsx
+@@ -1 +1,200 @@
++import React from 'react'
++import { daysLeft, formatDate, urgencyColor, statusColor, formatCurrency, sortByDeadline } from '../lib/helpers.js'
++import { STATUSES } from '../lib/constants.js'
+ 
++function KPICard({ label, value, sub, color = '#1a6b3c', onClick }) {
++  return (
++    <div
++      onClick={onClick}
++      style={{
++        background: '#fff', borderRadius: 12, padding: '20px 24px',
++        boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
++        borderLeft: `4px solid ${color}`,
++        cursor: onClick ? 'pointer' : 'default',
++        transition: 'box-shadow 0.15s',
++      }}
++      onMouseEnter={e => onClick && (e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.12)')}
++      onMouseLeave={e => onClick && (e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.08)')}
++    >
++      <div style={{ fontSize: 28, fontWeight: 800, color }}>{value}</div>
++      <div style={{ fontSize: 13, fontWeight: 600, color: '#1e293b', marginTop: 2 }}>{label}</div>
++      {sub && <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>{sub}</div>}
++    </div>
++  )
++}
++
++export default function Dashboard({ grants, user, onViewGrant, onNavigate }) {
++  const total = grants.length
++  const awarded = grants.filter(g => g.status === 'Awarded').length
++  const inProgress = grants.filter(g => ['In Progress', 'Submitted', 'Under Review'].includes(g.status)).length
++  const urgent = grants.filter(g => { const d = daysLeft(g.deadline); return d !== null && d >= 0 && d <= 21 }).length
++  const totalValue = grants.filter(g => g.status === 'Awarded' && g.high_usd).reduce((s, g) => s + (g.high_usd || 0), 0)
++  const pipeline = grants.filter(g => g.status !== 'Awarded' && g.status !== 'Rejected' && g.high_usd).reduce((s, g) => s + (g.high_usd || 0), 0)
++
++  const upcomingDeadlines = sortByDeadline(grants)
++    .filter(g => { const d = daysLeft(g.deadline); return d !== null && d >= 0 })
++    .slice(0, 6)
++
++  const statusBreakdown = STATUSES.map(s => ({
++    label: s,
++    count: grants.filter(g => g.status === s).length,
++  })).filter(s => s.count > 0)
++
++  const highPriority = grants.filter(g => g.priority === 'high' && g.status !== 'Awarded' && g.status !== 'Rejected')
++
++  const firstName = user?.name?.split('.')?.[1]?.trim() || user?.name?.split(' ')?.[0] || 'there'
++
++  return (
++    <div style={{ animation: 'fadeIn 0.25s ease' }}>
++      {/* Header */}
++      <div style={{ marginBottom: 28 }}>
++        <h1 style={{ fontSize: 22, fontWeight: 800, color: '#1a6b3c' }}>
++          Good day, {firstName} 👋
++        </h1>
++        <p style={{ color: '#64748b', fontSize: 13, marginTop: 4 }}>
++          {new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
++          {' · '}Uganda Biodiversity Fund Grants Dashboard
++        </p>
++      </div>
++
++      {/* KPI row */}
++      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16, marginBottom: 28 }}>
++        <KPICard label="Total Grants" value={total} sub="in pipeline" color="#1a6b3c" onClick={() => onNavigate('grants')} />
++        <KPICard label="Active / In Progress" value={inProgress} sub="being worked on" color="#3b82f6" onClick={() => onNavigate('grants')} />
++        <KPICard label="Awarded" value={awarded} sub={totalValue ? `~${formatCurrency(totalValue)} secured` : 'grants won'} color="#22c55e" />
++        <KPICard label="Urgent Deadlines" value={urgent} sub="due within 21 days" color={urgent > 0 ? '#ef4444' : '#94a3b8'} onClick={() => onNavigate('pipeline')} />
++        {pipeline > 0 && <KPICard label="Pipeline Value" value={formatCurrency(pipeline)} sub="potential funding" color="#8b5cf6" />}
++      </div>
++
++      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 20 }}>
++        {/* Upcoming deadlines */}
++        <div style={{ background: '#fff', borderRadius: 12, padding: 20, boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }}>
++          <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
++            <span>Upcoming Deadlines</span>
++            <button
++              onClick={() => onNavigate('pipeline')}
++              style={{ fontSize: 11, color: '#1a6b3c', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}
++            >View all →</button>
++          </h3>
++          {upcomingDeadlines.length === 0 ? (
++            <p style={{ color: '#94a3b8', fontSize: 13 }}>No upcoming deadlines</p>
++          ) : (
++            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
++              {upcomingDeadlines.map(g => {
++                const d = daysLeft(g.deadline)
++                return (
++                  <div
++                    key={g.id}
++                    onClick={() => onViewGrant(g)}
++                    style={{
++                      display: 'flex', alignItems: 'center', gap: 10,
++                      padding: '8px 10px', borderRadius: 8,
++                      background: '#f8fafc', cursor: 'pointer',
++                      border: '1px solid #f1f5f9',
++                    }}
++                  >
++                    <div style={{
++                      width: 8, height: 8, borderRadius: '50%',
++                      background: urgencyColor(d), flexShrink: 0,
++                    }} />
++                    <div style={{ flex: 1, minWidth: 0 }}>
++                      <div style={{ fontWeight: 600, fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
++                        {g.name}
++                      </div>
++                      <div style={{ fontSize: 11, color: '#64748b' }}>{g.donor || '—'}</div>
++                    </div>
++                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
++                      <div style={{ fontSize: 11, fontWeight: 700, color: urgencyColor(d) }}>
++                        {d === 0 ? 'TODAY' : `${d}d`}
++                      </div>
++                      <div style={{ fontSize: 10, color: '#94a3b8' }}>{formatDate(g.deadline)}</div>
++                    </div>
++                  </div>
++                )
++              })}
++            </div>
++          )}
++        </div>
++
++        {/* Status breakdown */}
++        <div style={{ background: '#fff', borderRadius: 12, padding: 20, boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }}>
++          <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 16 }}>Status Breakdown</h3>
++          {statusBreakdown.length === 0 ? (
++            <p style={{ color: '#94a3b8', fontSize: 13 }}>No grants yet. <button onClick={() => onNavigate('grants')} style={{ color: '#1a6b3c', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Add one →</button></p>
++          ) : (
++            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
++              {statusBreakdown.map(({ label, count }) => (
++                <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
++                  <div style={{ width: 10, height: 10, borderRadius: 2, background: statusColor(label), flexShrink: 0 }} />
++                  <span style={{ flex: 1, fontSize: 13, color: '#334155' }}>{label}</span>
++                  <span style={{ fontSize: 13, fontWeight: 700, color: '#1e293b' }}>{count}</span>
++                  <div style={{
++                    height: 6, width: `${Math.round((count / total) * 80)}px`,
++                    background: statusColor(label), borderRadius: 3, opacity: 0.6,
++                    minWidth: 6,
++                  }} />
++                </div>
++              ))}
++            </div>
++          )}
++        </div>
++      </div>
++
++      {/* High priority grants */}
++      {highPriority.length > 0 && (
++        <div style={{ background: '#fff', borderRadius: 12, padding: 20, boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }}>
++          <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 14, color: '#ef4444' }}>
++            🔴 High Priority Grants
++          </h3>
++          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 10 }}>
++            {highPriority.slice(0, 6).map(g => {
++              const d = daysLeft(g.deadline)
++              return (
++                <div
++                  key={g.id}
++                  onClick={() => onViewGrant(g)}
++                  style={{
++                    padding: '10px 14px', borderRadius: 8,
++                    border: '1.5px solid #fee2e2', background: '#fff7f7',
++                    cursor: 'pointer',
++                  }}
++                >
++                  <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 3 }}>{g.name}</div>
++                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
++                    <span style={{ fontSize: 11, color: '#64748b' }}>{g.donor || 'No donor'}</span>
++                    {d !== null && d >= 0 && (
++                      <span style={{ fontSize: 11, color: urgencyColor(d), fontWeight: 600 }}>
++                        {d}d left
++                      </span>
++                    )}
++                    <span style={{
++                      fontSize: 10, padding: '1px 6px', borderRadius: 4,
++                      background: statusColor(g.status) + '22', color: statusColor(g.status),
++                      fontWeight: 600,
++                    }}>{g.status}</span>
++                  </div>
++                </div>
++              )
++            })}
++          </div>
++        </div>
++      )}
++
++      {total === 0 && (
++        <div style={{ textAlign: 'center', padding: '60px 20px', color: '#94a3b8' }}>
++          <div style={{ fontSize: 48, marginBottom: 12 }}>📋</div>
++          <p style={{ fontSize: 15, fontWeight: 600, marginBottom: 8 }}>No grants in your pipeline yet</p>
++          <p style={{ fontSize: 13, marginBottom: 20 }}>Start by adding your first grant opportunity</p>
++          <button
++            onClick={() => onNavigate('grants')}
++            style={{
++              background: '#1a6b3c', color: '#fff', border: 'none',
++              borderRadius: 8, padding: '10px 20px', fontSize: 14,
++              fontWeight: 600, cursor: 'pointer',
++            }}
++          >Add First Grant</button>
++        </div>
++      )}
++    </div>
++  )
++}
+diff --git a/src/pages/GrantTracker.jsx b/src/pages/GrantTracker.jsx
+index 8b13789..b01b961 100644
+--- a/src/pages/GrantTracker.jsx
++++ b/src/pages/GrantTracker.jsx
+@@ -1 +1,403 @@
++import React, { useState, useEffect } from 'react'
++import { TEAM, THEMES, PROGRAM_WINDOWS, STATUSES, PRIORITIES, GEO_OPTIONS } from '../lib/constants.js'
++import { daysLeft, formatDate, urgencyColor, statusColor, priorityColor, formatCurrency, sortByDeadline } from '../lib/helpers.js'
+ 
++const EMPTY_FORM = {
++  name: '', donor: '', deadline: '', size: '', high_usd: '', low_usd: '',
++  status: 'Not Started', priority: 'medium', geo: '', themes: [],
++  assignee: '', link: '', notes: '', batch: '',
++}
++
++function Badge({ text, color }) {
++  return (
++    <span style={{
++      display: 'inline-block', padding: '2px 8px', borderRadius: 4,
++      fontSize: 11, fontWeight: 600,
++      background: color + '22', color,
++    }}>{text}</span>
++  )
++}
++
++function GrantForm({ initial = EMPTY_FORM, onSave, onCancel, title }) {
++  const [form, setForm] = useState({ ...EMPTY_FORM, ...initial })
++
++  const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
++
++  const toggleTheme = (t) => {
++    set('themes', form.themes.includes(t) ? form.themes.filter(x => x !== t) : [...form.themes, t])
++  }
++
++  const handleSubmit = (e) => {
++    e.preventDefault()
++    if (!form.name.trim()) return
++    onSave({
++      ...form,
++      high_usd: form.high_usd ? Number(form.high_usd) : null,
++      low_usd: form.low_usd ? Number(form.low_usd) : null,
++      batch: form.batch ? Number(form.batch) : null,
++    })
++  }
++
++  const field = (label, key, type = 'text', opts = {}) => (
++    <div style={{ marginBottom: 14 }}>
++      <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 5 }}>
++        {label}{opts.required && ' *'}
++      </label>
++      {type === 'select' ? (
++        <select value={form[key]} onChange={e => set(key, e.target.value)}>
++          {opts.options?.map(o => (
++            <option key={typeof o === 'string' ? o : o.value} value={typeof o === 'string' ? o : o.value}>
++              {typeof o === 'string' ? o : o.label}
++            </option>
++          ))}
++        </select>
++      ) : type === 'textarea' ? (
++        <textarea
++          value={form[key]}
++          onChange={e => set(key, e.target.value)}
++          rows={3}
++          style={{ resize: 'vertical' }}
++          placeholder={opts.placeholder}
++        />
++      ) : (
++        <input
++          type={type}
++          value={form[key]}
++          onChange={e => set(key, e.target.value)}
++          placeholder={opts.placeholder}
++          required={opts.required}
++        />
++      )}
++    </div>
++  )
++
++  return (
++    <form onSubmit={handleSubmit}>
++      <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 20, color: '#1a6b3c' }}>{title}</h2>
++      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 20px' }}>
++        <div style={{ gridColumn: '1 / -1' }}>
++          {field('Grant / Opportunity Name', 'name', 'text', { required: true, placeholder: 'e.g. GEF Small Grants Programme' })}
++        </div>
++        {field('Donor / Funder', 'donor', 'text', { placeholder: 'e.g. GEF, USAID, EU' })}
++        {field('Application Deadline', 'deadline', 'date')}
++        {field('Grant Size', 'size', 'text', { placeholder: 'e.g. $50K–$200K' })}
++        {field('Status', 'status', 'select', { options: STATUSES })}
++        {field('Priority', 'priority', 'select', { options: PRIORITIES })}
++        {field('Max Value (USD)', 'high_usd', 'number', { placeholder: '200000' })}
++        {field('Min Value (USD)', 'low_usd', 'number', { placeholder: '50000' })}
++        {field('Geography', 'geo', 'select', { options: ['', ...GEO_OPTIONS].map(g => ({ value: g, label: g || '— Select —' })) })}
++        {field('Lead Assignee', 'assignee', 'select', {
++          options: [{ value: '', label: '— Unassigned —' }, ...TEAM.map(m => ({ value: m.name, label: m.name + ' — ' + m.role }))]
++        })}
++        {field('Grant Link / URL', 'link', 'url', { placeholder: 'https://...' })}
++        {field('Batch / Round', 'batch', 'number', { placeholder: 'e.g. 3' })}
++      </div>
++
++      {/* Themes */}
++      <div style={{ marginBottom: 14 }}>
++        <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 6 }}>Themes</label>
++        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
++          {THEMES.map(t => (
++            <label key={t} style={{
++              display: 'flex', alignItems: 'center', gap: 5,
++              padding: '4px 10px', borderRadius: 6,
++              background: form.themes.includes(t) ? '#1a6b3c' : '#f1f5f9',
++              color: form.themes.includes(t) ? '#fff' : '#475569',
++              cursor: 'pointer', fontSize: 12, fontWeight: 500,
++              userSelect: 'none',
++            }}>
++              <input
++                type="checkbox"
++                style={{ display: 'none' }}
++                checked={form.themes.includes(t)}
++                onChange={() => toggleTheme(t)}
++              />
++              {form.themes.includes(t) ? '✓ ' : ''}{t}
++            </label>
++          ))}
++        </div>
++      </div>
++
++      {field('Notes / Comments', 'notes', 'textarea', { placeholder: 'Key requirements, contacts, strategic notes...' })}
++
++      <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 4 }}>
++        <button type="button" onClick={onCancel} style={{
++          padding: '9px 18px', borderRadius: 7, border: '1.5px solid #e2e8f0',
++          background: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer',
++        }}>Cancel</button>
++        <button type="submit" style={{
++          padding: '9px 20px', borderRadius: 7, border: 'none',
++          background: '#1a6b3c', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer',
++        }}>Save Grant</button>
++      </div>
++    </form>
++  )
++}
++
++function GrantDetail({ grant, onEdit, onDelete, onClose }) {
++  const d = daysLeft(grant.deadline)
++  return (
++    <div>
++      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
++        <div>
++          <h2 style={{ fontSize: 18, fontWeight: 800, color: '#1a6b3c', marginBottom: 6 }}>{grant.name}</h2>
++          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
++            <Badge text={grant.status} color={statusColor(grant.status)} />
++            <Badge text={grant.priority + ' priority'} color={priorityColor(grant.priority)} />
++            {d !== null && d >= 0 && <Badge text={d === 0 ? 'Due TODAY' : `${d} days left`} color={urgencyColor(d)} />}
++          </div>
++        </div>
++        <div style={{ display: 'flex', gap: 8 }}>
++          <button onClick={onEdit} style={{
++            padding: '7px 14px', borderRadius: 7, border: '1.5px solid #e2e8f0',
++            background: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer',
++          }}>Edit</button>
++          <button onClick={onClose} style={{
++            padding: '7px 14px', borderRadius: 7, border: 'none',
++            background: '#f1f5f9', fontSize: 12, fontWeight: 600, cursor: 'pointer',
++          }}>Close</button>
++        </div>
++      </div>
++
++      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 24px', marginBottom: 16 }}>
++        {[
++          ['Donor', grant.donor],
++          ['Deadline', formatDate(grant.deadline)],
++          ['Grant Size', grant.size],
++          ['Max Value', grant.high_usd ? formatCurrency(grant.high_usd) : null],
++          ['Geography', grant.geo],
++          ['Assignee', grant.assignee],
++          ['Batch / Round', grant.batch],
++        ].filter(([, v]) => v).map(([k, v]) => (
++          <div key={k}>
++            <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>{k}</span>
++            <div style={{ fontSize: 13, color: '#1e293b', fontWeight: 500 }}>{v}</div>
++          </div>
++        ))}
++      </div>
++
++      {grant.themes?.length > 0 && (
++        <div style={{ marginBottom: 12 }}>
++          <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, marginBottom: 5 }}>THEMES</div>
++          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
++            {grant.themes.map(t => (
++              <span key={t} style={{
++                padding: '3px 8px', borderRadius: 4, fontSize: 11,
++                background: '#dcfce7', color: '#166534', fontWeight: 500,
++              }}>{t}</span>
++            ))}
++          </div>
++        </div>
++      )}
++
++      {grant.notes && (
++        <div style={{ marginBottom: 12 }}>
++          <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, marginBottom: 5 }}>NOTES</div>
++          <div style={{ fontSize: 13, color: '#334155', background: '#f8fafc', padding: '10px 14px', borderRadius: 8, lineHeight: 1.6 }}>
++            {grant.notes}
++          </div>
++        </div>
++      )}
++
++      {grant.link && (
++        <a href={grant.link} target="_blank" rel="noopener noreferrer" style={{
++          display: 'inline-flex', alignItems: 'center', gap: 5,
++          color: '#1a6b3c', fontSize: 13, fontWeight: 600,
++        }}>
++          🔗 Open Grant Link →
++        </a>
++      )}
++
++      <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid #f1f5f9' }}>
++        <button
++          onClick={() => { if (window.confirm(`Delete "${grant.name}"?`)) onDelete(grant.id) }}
++          style={{
++            padding: '7px 14px', borderRadius: 7, border: '1.5px solid #fee2e2',
++            background: '#fff', color: '#ef4444', fontSize: 12, fontWeight: 600, cursor: 'pointer',
++          }}
++        >Delete Grant</button>
++      </div>
++    </div>
++  )
++}
++
++export default function GrantTracker({ grants, onAdd, onUpdate, onDelete, user, initialDetail }) {
++  const [view, setView] = useState('list')
++  const [selected, setSelected] = useState(initialDetail || null)
++  const [search, setSearch] = useState('')
++  const [filterStatus, setFilterStatus] = useState('')
++  const [filterPriority, setFilterPriority] = useState('')
++  const [sort, setSort] = useState('deadline')
++
++  useEffect(() => {
++    if (initialDetail) { setSelected(initialDetail); setView('detail') }
++  }, [initialDetail])
++
++  const filtered = grants
++    .filter(g => {
++      if (search) {
++        const q = search.toLowerCase()
++        return g.name?.toLowerCase().includes(q) || g.donor?.toLowerCase().includes(q) || g.notes?.toLowerCase().includes(q)
++      }
++      return true
++    })
++    .filter(g => !filterStatus || g.status === filterStatus)
++    .filter(g => !filterPriority || g.priority === filterPriority)
++    .sort((a, b) => {
++      if (sort === 'deadline') {
++        if (!a.deadline && !b.deadline) return 0
++        if (!a.deadline) return 1
++        if (!b.deadline) return -1
++        return new Date(a.deadline) - new Date(b.deadline)
++      }
++      if (sort === 'name') return a.name.localeCompare(b.name)
++      if (sort === 'priority') {
++        const order = { high: 0, medium: 1, low: 2 }
++        return (order[a.priority] ?? 1) - (order[b.priority] ?? 1)
++      }
++      return 0
++    })
++
++  const handleSaveNew = (data) => { onAdd(data); setView('list') }
++  const handleSaveEdit = (data) => {
++    onUpdate(selected.id, data)
++    setSelected({ ...selected, ...data })
++    setView('detail')
++  }
++
++  if (view === 'add') {
++    return (
++      <div style={{ background: '#fff', borderRadius: 12, padding: 28, maxWidth: 720, animation: 'fadeIn 0.2s ease' }}>
++        <GrantForm title="Add New Grant" onSave={handleSaveNew} onCancel={() => setView('list')} />
++      </div>
++    )
++  }
++
++  if (view === 'edit' && selected) {
++    return (
++      <div style={{ background: '#fff', borderRadius: 12, padding: 28, maxWidth: 720, animation: 'fadeIn 0.2s ease' }}>
++        <GrantForm title={`Edit: ${selected.name}`} initial={selected} onSave={handleSaveEdit} onCancel={() => setView('detail')} />
++      </div>
++    )
++  }
++
++  if (view === 'detail' && selected) {
++    const live = grants.find(g => g.id === selected.id) || selected
++    return (
++      <div style={{ background: '#fff', borderRadius: 12, padding: 28, maxWidth: 720, animation: 'fadeIn 0.2s ease' }}>
++        <GrantDetail
++          grant={live}
++          onEdit={() => setView('edit')}
++          onDelete={(id) => { onDelete(id); setView('list'); setSelected(null) }}
++          onClose={() => { setView('list'); setSelected(null) }}
++        />
++      </div>
++    )
++  }
++
++  return (
++    <div style={{ animation: 'fadeIn 0.25s ease' }}>
++      {/* Header */}
++      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
++        <div>
++          <h1 style={{ fontSize: 20, fontWeight: 800, color: '#1a6b3c' }}>Grant Tracker</h1>
++          <p style={{ fontSize: 13, color: '#64748b', marginTop: 2 }}>{grants.length} grants in pipeline</p>
++        </div>
++        <button
++          onClick={() => setView('add')}
++          style={{
++            background: '#1a6b3c', color: '#fff', border: 'none',
++            borderRadius: 8, padding: '10px 18px', fontSize: 13,
++            fontWeight: 600, cursor: 'pointer',
++          }}
++        >+ Add Grant</button>
++      </div>
++
++      {/* Filters */}
++      <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
++        <input
++          value={search}
++          onChange={e => setSearch(e.target.value)}
++          placeholder="Search grants..."
++          style={{ width: 220 }}
++        />
++        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} style={{ width: 160 }}>
++          <option value="">All Statuses</option>
++          {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
++        </select>
++        <select value={filterPriority} onChange={e => setFilterPriority(e.target.value)} style={{ width: 140 }}>
++          <option value="">All Priorities</option>
++          {PRIORITIES.map(p => <option key={p} value={p}>{p}</option>)}
++        </select>
++        <select value={sort} onChange={e => setSort(e.target.value)} style={{ width: 140 }}>
++          <option value="deadline">Sort: Deadline</option>
++          <option value="name">Sort: Name</option>
++          <option value="priority">Sort: Priority</option>
++        </select>
++      </div>
++
++      {/* Table */}
++      {filtered.length === 0 ? (
++        <div style={{ textAlign: 'center', padding: '50px 20px', color: '#94a3b8' }}>
++          {grants.length === 0
++            ? <p>No grants yet. Click <strong>+ Add Grant</strong> to get started.</p>
++            : <p>No grants match your filters.</p>
++          }
++        </div>
++      ) : (
++        <div style={{ background: '#fff', borderRadius: 12, overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.08)' }}>
++          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
++            <thead>
++              <tr style={{ background: '#f8fafc', borderBottom: '1px solid #f1f5f9' }}>
++                {['Grant Name', 'Donor', 'Deadline', 'Status', 'Priority', 'Assignee', 'Value'].map(h => (
++                  <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#64748b', whiteSpace: 'nowrap' }}>{h}</th>
++                ))}
++              </tr>
++            </thead>
++            <tbody>
++              {filtered.map((g, i) => {
++                const d = daysLeft(g.deadline)
++                return (
++                  <tr
++                    key={g.id}
++                    onClick={() => { setSelected(g); setView('detail') }}
++                    style={{
++                      borderBottom: '1px solid #f8fafc',
++                      cursor: 'pointer',
++                      background: i % 2 === 0 ? '#fff' : '#fafafa',
++                    }}
++                    onMouseEnter={e => e.currentTarget.style.background = '#f0fdf4'}
++                    onMouseLeave={e => e.currentTarget.style.background = i % 2 === 0 ? '#fff' : '#fafafa'}
++                  >
++                    <td style={{ padding: '10px 14px', fontWeight: 600, fontSize: 13, maxWidth: 220 }}>
++                      <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{g.name}</div>
++                    </td>
++                    <td style={{ padding: '10px 14px', fontSize: 12, color: '#475569' }}>{g.donor || '—'}</td>
++                    <td style={{ padding: '10px 14px', fontSize: 12, whiteSpace: 'nowrap' }}>
++                      {g.deadline ? (
++                        <div>
++                          <div style={{ color: urgencyColor(d), fontWeight: 600 }}>{formatDate(g.deadline)}</div>
++                          {d !== null && d >= 0 && <div style={{ fontSize: 10, color: urgencyColor(d) }}>{d === 0 ? 'TODAY' : `${d}d`}</div>}
++                        </div>
++                      ) : '—'}
++                    </td>
++                    <td style={{ padding: '10px 14px' }}>
++                      <Badge text={g.status} color={statusColor(g.status)} />
++                    </td>
++                    <td style={{ padding: '10px 14px' }}>
++                      <Badge text={g.priority} color={priorityColor(g.priority)} />
++                    </td>
++                    <td style={{ padding: '10px 14px', fontSize: 12, color: '#475569' }}>{g.assignee || '—'}</td>
++                    <td style={{ padding: '10px 14px', fontSize: 12, color: '#1a6b3c', fontWeight: 600 }}>
++                      {g.high_usd ? formatCurrency(g.high_usd) : g.size || '—'}
++                    </td>
++                  </tr>
++                )
++              })}
++            </tbody>
++          </table>
++        </div>
++      )}
++    </div>
++  )
++}
+diff --git a/src/pages/LoginPage.jsx b/src/pages/LoginPage.jsx
+index 8b13789..e33b17a 100644
+--- a/src/pages/LoginPage.jsx
++++ b/src/pages/LoginPage.jsx
+@@ -1 +1,93 @@
++import React, { useState } from 'react'
++import { TEAM } from '../lib/constants.js'
+ 
++export default function LoginPage({ onLogin }) {
++  const [selected, setSelected] = useState('')
++  const [error, setError] = useState('')
++
++  const handleLogin = () => {
++    const member = TEAM.find(m => m.id === selected)
++    if (!member) { setError('Please select your name'); return }
++    onLogin(member)
++  }
++
++  return (
++    <div style={{
++      minHeight: '100vh',
++      background: 'linear-gradient(135deg, #1a6b3c 0%, #2d9b5e 50%, #1a6b3c 100%)',
++      display: 'flex',
++      alignItems: 'center',
++      justifyContent: 'center',
++      padding: 20,
++    }}>
++      <div style={{
++        background: '#fff',
++        borderRadius: 16,
++        padding: '48px 40px',
++        width: '100%',
++        maxWidth: 420,
++        boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
++        textAlign: 'center',
++        animation: 'fadeIn 0.3s ease',
++      }}>
++        {/* Logo area */}
++        <div style={{
++          width: 72, height: 72,
++          background: '#1a6b3c',
++          borderRadius: '50%',
++          display: 'flex', alignItems: 'center', justifyContent: 'center',
++          fontSize: 32, margin: '0 auto 20px',
++        }}>🌿</div>
++
++        <h1 style={{ fontSize: 20, fontWeight: 800, color: '#1a6b3c', marginBottom: 4 }}>
++          UBF Grants Platform
++        </h1>
++        <p style={{ fontSize: 13, color: '#64748b', marginBottom: 32 }}>
++          Uganda Biodiversity Fund — Grants Intelligence System
++        </p>
++
++        <div style={{ textAlign: 'left', marginBottom: 8 }}>
++          <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 6, display: 'block' }}>
++            Select your name
++          </label>
++          <select
++            value={selected}
++            onChange={e => { setSelected(e.target.value); setError('') }}
++            style={{
++              width: '100%', padding: '11px 14px',
++              border: `1.5px solid ${error ? '#ef4444' : '#e2e8f0'}`,
++              borderRadius: 8, fontSize: 14, background: '#fff',
++              outline: 'none', cursor: 'pointer',
++            }}
++          >
++            <option value=''>— Select team member —</option>
++            {TEAM.map(m => (
++              <option key={m.id} value={m.id}>{m.name} — {m.role}</option>
++            ))}
++          </select>
++          {error && <p style={{ color: '#ef4444', fontSize: 12, marginTop: 4 }}>{error}</p>}
++        </div>
++
++        <button
++          onClick={handleLogin}
++          style={{
++            width: '100%', padding: '12px',
++            background: '#1a6b3c', color: '#fff',
++            border: 'none', borderRadius: 8,
++            fontSize: 14, fontWeight: 600,
++            cursor: 'pointer', marginTop: 8,
++            transition: 'background 0.15s',
++          }}
++          onMouseEnter={e => e.target.style.background = '#15583201' || (e.target.style.background = '#155832')}
++          onMouseLeave={e => e.target.style.background = '#1a6b3c'}
++        >
++          Sign In
++        </button>
++
++        <p style={{ fontSize: 11, color: '#94a3b8', marginTop: 24 }}>
++          For now and the future · Uganda Biodiversity Fund
++        </p>
++      </div>
++    </div>
++  )
++}
+diff --git a/src/pages/PipelinePage.jsx b/src/pages/PipelinePage.jsx
+index 8b13789..b74d04a 100644
+--- a/src/pages/PipelinePage.jsx
++++ b/src/pages/PipelinePage.jsx
+@@ -1 +1,175 @@
++import React, { useState } from 'react'
++import { daysLeft, formatDate, urgencyColor, statusColor, formatCurrency, sortByDeadline } from '../lib/helpers.js'
+ 
++const BANDS = [
++  { label: 'Overdue',     test: d => d !== null && d < 0,           color: '#94a3b8' },
++  { label: 'This Week',   test: d => d !== null && d >= 0 && d <= 7,  color: '#ef4444' },
++  { label: 'Next 2 Weeks',test: d => d !== null && d > 7 && d <= 21, color: '#f97316' },
++  { label: 'This Month',  test: d => d !== null && d > 21 && d <= 60, color: '#eab308' },
++  { label: 'Upcoming',    test: d => d !== null && d > 60,            color: '#22c55e' },
++  { label: 'No Deadline', test: d => d === null,                      color: '#cbd5e1' },
++]
++
++function GrantCard({ grant, onClick }) {
++  const d = daysLeft(grant.deadline)
++  const color = urgencyColor(d)
++  return (
++    <div
++      onClick={() => onClick(grant)}
++      style={{
++        background: '#fff', borderRadius: 8, padding: '12px 14px',
++        border: `1.5px solid ${color}33`,
++        borderLeft: `3px solid ${color}`,
++        cursor: 'pointer', marginBottom: 8,
++        transition: 'box-shadow 0.15s',
++      }}
++      onMouseEnter={e => e.currentTarget.style.boxShadow = '0 2px 10px rgba(0,0,0,0.1)'}
++      onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}
++    >
++      <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 4, lineHeight: 1.4 }}>{grant.name}</div>
++      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
++        {grant.donor && <span style={{ fontSize: 11, color: '#64748b' }}>{grant.donor}</span>}
++        {grant.deadline && (
++          <span style={{ fontSize: 11, fontWeight: 700, color }}>
++            {d === null ? '' : d < 0 ? `${Math.abs(d)}d overdue` : d === 0 ? 'TODAY' : `${d}d · ${formatDate(grant.deadline)}`}
++          </span>
++        )}
++        <span style={{
++          fontSize: 10, padding: '1px 6px', borderRadius: 4,
++          background: statusColor(grant.status) + '22', color: statusColor(grant.status),
++          fontWeight: 600, marginLeft: 'auto',
++        }}>{grant.status}</span>
++      </div>
++      {grant.assignee && (
++        <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 3 }}>👤 {grant.assignee}</div>
++      )}
++    </div>
++  )
++}
++
++export default function PipelinePage({ grants, onViewGrant }) {
++  const [showAll, setShowAll] = useState(false)
++
++  const sorted = sortByDeadline(grants)
++  const active = sorted.filter(g => g.status !== 'Awarded' && g.status !== 'Rejected')
++
++  const bandedGrants = BANDS.map(band => ({
++    ...band,
++    grants: active.filter(g => band.test(daysLeft(g.deadline))),
++  })).filter(b => b.grants.length > 0 || b.label === 'This Week')
++
++  const awarded = grants.filter(g => g.status === 'Awarded')
++  const totalPipeline = active.filter(g => g.high_usd).reduce((s, g) => s + g.high_usd, 0)
++  const totalAwarded = awarded.filter(g => g.high_usd).reduce((s, g) => s + g.high_usd, 0)
++
++  return (
++    <div style={{ animation: 'fadeIn 0.25s ease' }}>
++      <div style={{ marginBottom: 24 }}>
++        <h1 style={{ fontSize: 20, fontWeight: 800, color: '#1a6b3c' }}>Pipeline Calendar</h1>
++        <p style={{ fontSize: 13, color: '#64748b', marginTop: 2 }}>
++          Deadlines organised by urgency · {active.length} active grants
++        </p>
++      </div>
++
++      {/* Summary row */}
++      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 24 }}>
++        {BANDS.slice(0, 4).map(band => {
++          const count = active.filter(g => band.test(daysLeft(g.deadline))).length
++          return (
++            <div key={band.label} style={{
++              background: '#fff', borderRadius: 10, padding: '14px 18px',
++              borderLeft: `4px solid ${band.color}`,
++              boxShadow: '0 1px 3px rgba(0,0,0,0.07)',
++            }}>
++              <div style={{ fontSize: 24, fontWeight: 800, color: band.color }}>{count}</div>
++              <div style={{ fontSize: 12, color: '#64748b', fontWeight: 500 }}>{band.label}</div>
++            </div>
++          )
++        })}
++      </div>
++
++      {/* Value summary */}
++      {(totalPipeline > 0 || totalAwarded > 0) && (
++        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 24 }}>
++          {totalPipeline > 0 && (
++            <div style={{ background: '#fff', borderRadius: 10, padding: '14px 18px', boxShadow: '0 1px 3px rgba(0,0,0,0.07)' }}>
++              <div style={{ fontSize: 13, color: '#64748b', marginBottom: 2 }}>Active Pipeline Value</div>
++              <div style={{ fontSize: 20, fontWeight: 800, color: '#3b82f6' }}>{formatCurrency(totalPipeline)}</div>
++            </div>
++          )}
++          {totalAwarded > 0 && (
++            <div style={{ background: '#fff', borderRadius: 10, padding: '14px 18px', boxShadow: '0 1px 3px rgba(0,0,0,0.07)' }}>
++              <div style={{ fontSize: 13, color: '#64748b', marginBottom: 2 }}>Total Awarded</div>
++              <div style={{ fontSize: 20, fontWeight: 800, color: '#22c55e' }}>{formatCurrency(totalAwarded)}</div>
++            </div>
++          )}
++        </div>
++      )}
++
++      {/* Bands */}
++      {active.length === 0 ? (
++        <div style={{ textAlign: 'center', padding: '60px 20px', color: '#94a3b8' }}>
++          <p style={{ fontSize: 15 }}>No active grants in pipeline yet.</p>
++        </div>
++      ) : (
++        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 20 }}>
++          {bandedGrants.map(band => (
++            <div key={band.label}>
++              <div style={{
++                display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10,
++              }}>
++                <div style={{ width: 10, height: 10, borderRadius: 2, background: band.color }} />
++                <span style={{ fontSize: 13, fontWeight: 700, color: '#1e293b' }}>{band.label}</span>
++                <span style={{
++                  fontSize: 11, padding: '1px 7px', borderRadius: 10,
++                  background: band.color + '22', color: band.color, fontWeight: 600,
++                }}>{band.grants.length}</span>
++              </div>
++              {band.grants.length === 0 ? (
++                <div style={{ padding: '14px', borderRadius: 8, border: '1.5px dashed #e2e8f0', color: '#94a3b8', fontSize: 12, textAlign: 'center' }}>
++                  None
++                </div>
++              ) : (
++                band.grants.map(g => <GrantCard key={g.id} grant={g} onClick={onViewGrant} />)
++              )}
++            </div>
++          ))}
++        </div>
++      )}
++
++      {/* Awarded section */}
++      {awarded.length > 0 && (
++        <div style={{ marginTop: 32 }}>
++          <div
++            onClick={() => setShowAll(s => !s)}
++            style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}
++          >
++            <span style={{ fontSize: 14, fontWeight: 700, color: '#22c55e' }}>
++              🏆 Awarded Grants ({awarded.length})
++            </span>
++            <span style={{ fontSize: 11, color: '#94a3b8' }}>{showAll ? '▲ hide' : '▼ show'}</span>
++          </div>
++          {showAll && (
++            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 10 }}>
++              {awarded.map(g => (
++                <div
++                  key={g.id}
++                  onClick={() => onViewGrant(g)}
++                  style={{
++                    background: '#f0fdf4', borderRadius: 8, padding: '12px 14px',
++                    borderLeft: '3px solid #22c55e', cursor: 'pointer',
++                  }}
++                >
++                  <div style={{ fontWeight: 600, fontSize: 13 }}>{g.name}</div>
++                  <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
++                    {g.donor}{g.high_usd ? ` · ${formatCurrency(g.high_usd)}` : ''}
++                  </div>
++                </div>
++              ))}
++            </div>
++          )}
++        </div>
++      )}
++    </div>
++  )
++}
+diff --git a/src/pages/TeamPage.jsx b/src/pages/TeamPage.jsx
+index 8b13789..6b4c1b2 100644
+--- a/src/pages/TeamPage.jsx
++++ b/src/pages/TeamPage.jsx
+@@ -1 +1,105 @@
++import React from 'react'
++import { TEAM } from '../lib/constants.js'
++import { daysLeft, formatDate, urgencyColor, statusColor } from '../lib/helpers.js'
+ 
++export default function TeamPage({ grants }) {
++  return (
++    <div style={{ animation: 'fadeIn 0.25s ease' }}>
++      <div style={{ marginBottom: 24 }}>
++        <h1 style={{ fontSize: 20, fontWeight: 800, color: '#1a6b3c' }}>Team View</h1>
++        <p style={{ fontSize: 13, color: '#64748b', marginTop: 2 }}>
++          Grant assignments and workload across the UBF grants team
++        </p>
++      </div>
++
++      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
++        {TEAM.map(member => {
++          const assigned = grants.filter(g =>
++            g.assignee && g.assignee.toLowerCase().includes(member.name.toLowerCase().split('.')[1]?.trim() || member.name)
++          )
++          const active = assigned.filter(g => !['Awarded', 'Rejected', 'On Hold'].includes(g.status))
++          const urgent = active.filter(g => { const d = daysLeft(g.deadline); return d !== null && d >= 0 && d <= 21 })
++
++          return (
++            <div key={member.id} style={{
++              background: '#fff', borderRadius: 12, padding: 20,
++              boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
++            }}>
++              {/* Member header */}
++              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid #f1f5f9' }}>
++                <div style={{
++                  width: 40, height: 40, borderRadius: '50%',
++                  background: '#1a6b3c', color: '#fff',
++                  display: 'flex', alignItems: 'center', justifyContent: 'center',
++                  fontSize: 16, fontWeight: 700, flexShrink: 0,
++                }}>
++                  {member.name.split('.').map(p => p.trim()[0]).join('').slice(0, 2).toUpperCase()}
++                </div>
++                <div style={{ flex: 1, minWidth: 0 }}>
++                  <div style={{ fontWeight: 700, fontSize: 14 }}>{member.name}</div>
++                  <div style={{ fontSize: 11, color: '#64748b' }}>{member.role}</div>
++                </div>
++                <div style={{ textAlign: 'right', flexShrink: 0 }}>
++                  <div style={{ fontSize: 20, fontWeight: 800, color: '#1a6b3c' }}>{active.length}</div>
++                  <div style={{ fontSize: 10, color: '#94a3b8' }}>active</div>
++                </div>
++              </div>
++
++              {urgent.length > 0 && (
++                <div style={{
++                  background: '#fef2f2', borderRadius: 6, padding: '6px 10px',
++                  marginBottom: 10, fontSize: 12, color: '#b91c1c', fontWeight: 500,
++                }}>
++                  ⚠️ {urgent.length} urgent deadline{urgent.length > 1 ? 's' : ''} within 21 days
++                </div>
++              )}
++
++              {active.length === 0 ? (
++                <p style={{ fontSize: 12, color: '#94a3b8' }}>No active grants assigned</p>
++              ) : (
++                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
++                  {active.slice(0, 5).map(g => {
++                    const d = daysLeft(g.deadline)
++                    return (
++                      <div key={g.id} style={{
++                        padding: '7px 10px', borderRadius: 6,
++                        background: '#f8fafc', border: '1px solid #f1f5f9',
++                      }}>
++                        <div style={{ fontWeight: 600, fontSize: 12, marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
++                          {g.name}
++                        </div>
++                        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
++                          <span style={{
++                            fontSize: 10, padding: '1px 5px', borderRadius: 3,
++                            background: statusColor(g.status) + '22', color: statusColor(g.status), fontWeight: 600,
++                          }}>{g.status}</span>
++                          {d !== null && d >= 0 && (
++                            <span style={{ fontSize: 10, color: urgencyColor(d), fontWeight: 600 }}>
++                              {d === 0 ? 'TODAY' : `${d}d`}
++                            </span>
++                          )}
++                          {g.deadline && <span style={{ fontSize: 10, color: '#94a3b8', marginLeft: 'auto' }}>{formatDate(g.deadline)}</span>}
++                        </div>
++                      </div>
++                    )
++                  })}
++                  {active.length > 5 && (
++                    <div style={{ fontSize: 11, color: '#94a3b8', textAlign: 'center', padding: '4px' }}>
++                      +{active.length - 5} more
++                    </div>
++                  )}
++                </div>
++              )}
++
++              <div style={{ marginTop: 12, paddingTop: 10, borderTop: '1px solid #f1f5f9' }}>
++                <a href={`mailto:${member.email}`} style={{ fontSize: 11, color: '#1a6b3c', fontWeight: 500 }}>
++                  ✉ {member.email}
++                </a>
++              </div>
++            </div>
++          )
++        })}
++      </div>
++    </div>
++  )
++}
+diff --git a/src/pages/UserGuide.jsx b/src/pages/UserGuide.jsx
+index 8b13789..598dcc1 100644
+--- a/src/pages/UserGuide.jsx
++++ b/src/pages/UserGuide.jsx
+@@ -1 +1,237 @@
++import React, { useState } from 'react'
+ 
++const SECTIONS = [
++  {
++    id: 'getting-started',
++    title: '1. Getting Started',
++    icon: '🚀',
++    content: [
++      {
++        heading: 'Signing In',
++        text: 'On the login screen, select your name from the dropdown list and click Sign In. No password is required — this platform is for internal UBF team use only.',
++      },
++      {
++        heading: 'Navigation',
++        text: 'Use the sidebar on the left to switch between sections: Dashboard, Grant Tracker, AI Agent, Pipeline, Team View, and this User Guide.',
++      },
++      {
++        heading: 'Switching Users',
++        text: 'To switch to a different team member, click "Switch User" at the bottom of the sidebar.',
++      },
++    ],
++  },
++  {
++    id: 'grant-tracker',
++    title: '2. Grant Tracker',
++    icon: '📋',
++    content: [
++      {
++        heading: 'Adding a Grant',
++        text: 'Click the "+ Add Grant" button in the Grant Tracker. Fill in as much information as you have — at minimum the grant name. You can update it later as more details become available.',
++      },
++      {
++        heading: 'Required Fields',
++        text: 'Only the Grant Name is required. However, we recommend always filling in the Deadline, Status, Priority, and Assignee fields so the team can track progress effectively.',
++      },
++      {
++        heading: 'Updating a Grant',
++        text: 'Click on any grant in the table to open its detail view. Click "Edit" to update the information. Click "Save Grant" when done.',
++      },
++      {
++        heading: 'Status Options',
++        text: 'Not Started → In Progress → Submitted → Under Review → Awarded or Rejected. Update the status as the grant moves through the process.',
++      },
++      {
++        heading: 'Priority Levels',
++        text: 'High = must pursue urgently. Medium = important but not urgent. Low = track but not actively working on. Use this to help the team focus effort.',
++      },
++      {
++        heading: 'Deleting a Grant',
++        text: 'Open the grant detail view and scroll to the bottom. Click "Delete Grant" and confirm. This cannot be undone, so be sure before deleting.',
++      },
++    ],
++  },
++  {
++    id: 'pipeline',
++    title: '3. Pipeline Calendar',
++    icon: '📅',
++    content: [
++      {
++        heading: 'Understanding the Calendar',
++        text: 'The Pipeline page organises all active grants by deadline urgency: Overdue, This Week, Next 2 Weeks, This Month, and Upcoming. Check this daily to stay on top of deadlines.',
++      },
++      {
++        heading: 'Colour Coding',
++        text: 'Red = urgent (this week), Orange = next 2 weeks, Yellow = this month, Green = upcoming. Grey = overdue or no deadline.',
++      },
++      {
++        heading: 'Clicking a Grant Card',
++        text: 'Click any grant card to navigate to its full detail in the Grant Tracker, where you can view or edit all information.',
++      },
++    ],
++  },
++  {
++    id: 'ai-agent',
++    title: '4. AI Grants Agent',
++    icon: '🤖',
++    content: [
++      {
++        heading: 'What the AI Agent Does',
++        text: 'The AI Agent can help you search for grant opportunities, analyse funding requirements, draft concept notes, and provide strategic advice on grant applications — all tailored to UBF\'s biodiversity work in Uganda.',
++      },
++      {
++        heading: 'Setting Up the API Key',
++        text: 'To use the AI Agent, you need an Anthropic API key. Click "Set API Key" in the top-right of the Agent page, enter your key (starts with sk-ant-), and click Save. The key is stored only in your browser.',
++      },
++      {
++        heading: 'Starting a Conversation',
++        text: 'Type your question or request in the text box at the bottom and press Enter or click Send. You can also click any of the suggested prompts to get started quickly.',
++      },
++      {
++        heading: 'Example Requests',
++        text: 'Try: "Search for biodiversity grants open to Ugandan NGOs", "Help me write a concept note introduction for a wetlands restoration project", or "Which funders focus on community livelihoods in East Africa?"',
++      },
++      {
++        heading: 'Context Awareness',
++        text: 'The agent is aware of your current grant pipeline (up to 20 grants). You can ask it to review your pipeline or advise on priorities.',
++      },
++    ],
++  },
++  {
++    id: 'team-view',
++    title: '5. Team View',
++    icon: '👥',
++    content: [
++      {
++        heading: 'What It Shows',
++        text: 'The Team View shows each team member\'s active grant assignments, with any urgent deadlines highlighted. Use this to see workload distribution across the team.',
++      },
++      {
++        heading: 'Assigning Grants',
++        text: 'Assignments are set when adding or editing a grant in the Grant Tracker. Select the lead team member from the "Lead Assignee" dropdown.',
++      },
++    ],
++  },
++  {
++    id: 'data',
++    title: '6. Data & Storage',
++    icon: '💾',
++    content: [
++      {
++        heading: 'Where Data is Stored',
++        text: 'Currently (Phase 1), all grant data is stored in your browser\'s local storage. This means data is device-specific — if you use a different computer or clear your browser data, the grants will not be there.',
++      },
++      {
++        heading: 'Backing Up Your Data',
++        text: 'To share data with the team, you will need to enter the same grants on each device for now. Phase 2 will introduce cloud storage (Supabase) so all staff see the same data in real time.',
++      },
++      {
++        heading: 'Phase 2: Cloud Database',
++        text: 'The platform is designed to migrate to Supabase cloud storage. When this is set up, all team members will share the same live grants data across devices. Contact T. Otieno to arrange this upgrade.',
++      },
++    ],
++  },
++  {
++    id: 'tips',
++    title: '7. Tips & Best Practices',
++    icon: '💡',
++    content: [
++      {
++        heading: 'Weekly Routine',
++        text: 'Check the Dashboard every Monday morning. Review the Pipeline page for deadlines this week. Update the status of any grants that have moved forward.',
++      },
++      {
++        heading: 'Keeping Records Clean',
++        text: 'Update grant statuses promptly — especially when submitted or when you hear back. A clean pipeline helps the whole team know where things stand.',
++      },
++      {
++        heading: 'Using Notes Effectively',
++        text: 'The Notes field is great for storing: key funder contact names, requirements you discovered, strategy notes, or links to related documents in Google Drive.',
++      },
++      {
++        heading: 'Need Help?',
++        text: 'For platform questions, contact T. Otieno at t.otieno@biodiversityfund.org',
++      },
++    ],
++  },
++]
++
++export default function UserGuide() {
++  const [open, setOpen] = useState('getting-started')
++
++  return (
++    <div style={{ animation: 'fadeIn 0.25s ease' }}>
++      <div style={{ marginBottom: 24 }}>
++        <h1 style={{ fontSize: 20, fontWeight: 800, color: '#1a6b3c' }}>Staff User Guide</h1>
++        <p style={{ fontSize: 13, color: '#64748b', marginTop: 2 }}>
++          Step-by-step guide for using the UBF Grants Intelligence Platform
++        </p>
++      </div>
++
++      <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: 20, alignItems: 'start' }}>
++        {/* Contents nav */}
++        <div style={{ background: '#fff', borderRadius: 10, padding: 14, boxShadow: '0 1px 4px rgba(0,0,0,0.08)', position: 'sticky', top: 20 }}>
++          <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', marginBottom: 10, letterSpacing: 0.5 }}>CONTENTS</div>
++          {SECTIONS.map(s => (
++            <button
++              key={s.id}
++              onClick={() => setOpen(s.id)}
++              style={{
++                display: 'flex', alignItems: 'center', gap: 7,
++                width: '100%', padding: '8px 10px', borderRadius: 7,
++                border: 'none', textAlign: 'left', fontSize: 12, cursor: 'pointer',
++                background: open === s.id ? '#f0fdf4' : 'transparent',
++                color: open === s.id ? '#1a6b3c' : '#475569',
++                fontWeight: open === s.id ? 600 : 400,
++                marginBottom: 2,
++              }}
++            >
++              <span>{s.icon}</span>
++              <span style={{ lineHeight: 1.3 }}>{s.title}</span>
++            </button>
++          ))}
++        </div>
++
++        {/* Content */}
++        <div>
++          {SECTIONS.filter(s => s.id === open).map(section => (
++            <div key={section.id} style={{ animation: 'fadeIn 0.2s ease' }}>
++              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
++                <span style={{ fontSize: 24 }}>{section.icon}</span>
++                <h2 style={{ fontSize: 18, fontWeight: 800, color: '#1a6b3c' }}>{section.title}</h2>
++              </div>
++              {section.content.map((item, i) => (
++                <div key={i} style={{
++                  background: '#fff', borderRadius: 10, padding: '16px 20px',
++                  boxShadow: '0 1px 4px rgba(0,0,0,0.07)', marginBottom: 12,
++                  borderLeft: '3px solid #1a6b3c',
++                }}>
++                  <h3 style={{ fontSize: 14, fontWeight: 700, color: '#1e293b', marginBottom: 8 }}>
++                    {item.heading}
++                  </h3>
++                  <p style={{ fontSize: 13, color: '#475569', lineHeight: 1.7 }}>{item.text}</p>
++                </div>
++              ))}
++
++              {/* Navigation */}
++              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 20 }}>
++                {SECTIONS.findIndex(s => s.id === open) > 0 && (
++                  <button
++                    onClick={() => setOpen(SECTIONS[SECTIONS.findIndex(s => s.id === open) - 1].id)}
++                    style={{ padding: '8px 16px', borderRadius: 7, border: '1.5px solid #e2e8f0', background: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
++                  >← Previous</button>
++                )}
++                {SECTIONS.findIndex(s => s.id === open) < SECTIONS.length - 1 && (
++                  <button
++                    onClick={() => setOpen(SECTIONS[SECTIONS.findIndex(s => s.id === open) + 1].id)}
++                    style={{ padding: '8px 16px', borderRadius: 7, border: 'none', background: '#1a6b3c', color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer', marginLeft: 'auto' }}
++                  >Next →</button>
++                )}
++              </div>
++            </div>
++          ))}
++        </div>
++      </div>
++    </div>
++  )
++}
+-- 
+2.43.0
