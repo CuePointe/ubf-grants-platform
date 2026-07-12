@@ -1,0 +1,472 @@
+
+<h2 class="sr-only">UBF Grants Intelligence Platform — live web application for Uganda Biodiversity Fund grant management</h2>
+<div id="ubf-root" style="min-height:600px; font-family: var(--font-sans); font-size:13px;"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"></script>
+
+<script>
+const { useState, useRef, useEffect } = React;
+
+const TEAM = [
+  { id:1, name:"I. Amani",     role:"Executive Director",       email:"i.amani@ugandabiodiversityfund.org",    avatar:"IA", color:"#1B5E20" },
+  { id:2, name:"W. Nabatanzi", role:"Finance & Admin Manager",  email:"w.nabatanzi@ugandabiodiversityfund.org", avatar:"WN", color:"#0D47A1" },
+  { id:3, name:"P. Musiime",   role:"Programs Officer",         email:"p.musiime@ugandabiodiversityfund.org",   avatar:"PM", color:"#4A148C" },
+  { id:4, name:"D. Okullu",    role:"M&E Officer",              email:"d.okullu@ugandabiodiversityfund.org",    avatar:"DO", color:"#E65100" },
+  { id:5, name:"O. Atuhaire",  role:"Project Officer",          email:"o.atuhaire@ugandabiodiversityfund.org",  avatar:"OA", color:"#880E4F" },
+  { id:6, name:"S. Abonyo",    role:"Administration Officer",   email:"s.abonyo@ugandabiodiversityfund.org",    avatar:"SA", color:"#37474F" },
+  { id:7, name:"T. Otieno",    role:"Office Assistant",         email:"t.otieno@biodiversityfund.org",          avatar:"TO", color:"#1565C0" },
+];
+
+const GRANTS = [
+  { id:1,  name:"EU/AICS – Sustainable Forests Uganda", donor:"AICS / EU", deadline:"2026-05-07", size:"€3M–€4M", batch:3, high:4400000, low:3300000, status:"Not Started", themes:["Forest Restoration","Biodiversity","Community Livelihoods"], geo:"Uganda (Karamoja/Eastern)", link:"https://www2.fundsforngos.org/community-development/promoting-sustainable-forests-and-livelihoods-through-non-timber-enterprises-uganda/", assignee:null, priority:"high" },
+  { id:2,  name:"Bezos Earth Fund – Africa Restoration", donor:"Bezos Earth Fund", deadline:"2026-12-31", size:"$1M–$10M+", batch:3, high:10000000, low:1000000, status:"Not Started", themes:["Forest Restoration","Biodiversity","Climate Resilience"], geo:"Africa (Albertine Rift)", link:"https://terrafund.org/programs", assignee:null, priority:"high" },
+  { id:3,  name:"GCF Uganda – REDD+ Forest Project", donor:"Green Climate Fund / FAO", deadline:"2026-12-31", size:"Sub-grants $31M", batch:3, high:5000000, low:500000, status:"Not Started", themes:["Forest Conservation","Climate Resilience","Biodiversity"], geo:"Uganda", link:"https://www.greenclimate.fund/countries/uganda", assignee:null, priority:"high" },
+  { id:4,  name:"Horizon Europe – Biodiversity Research", donor:"European Commission", deadline:"2026-09-23", size:"€5M–€15M", batch:3, high:16500000, low:5500000, status:"Not Started", themes:["Biodiversity","Ecosystem Restoration","Climate Resilience"], geo:"Global (Uganda as partner)", link:"https://rea.ec.europa.eu/funding-and-grants/horizon-europe-cluster-6-food-bioeconomy-natural-resources-agriculture-and-environment/biodiversity-and-ecosystem-services_en", assignee:null, priority:"medium" },
+  { id:5,  name:"MacArthur Foundation – Conservation", donor:"MacArthur Foundation", deadline:"2026-12-31", size:"$500K–$1.5M", batch:3, high:1500000, low:500000, status:"Not Started", themes:["Biodiversity","Sustainable Dev","Community Livelihoods"], geo:"Albertine Rift", link:"https://www.macfound.org/programs/conservation/", assignee:null, priority:"medium" },
+  { id:6,  name:"Mitigation Action Facility – 2026", donor:"Mitigation Action Facility", deadline:"2026-05-31", size:"€5M–€25M", batch:3, high:27500000, low:5500000, status:"Not Started", themes:["Climate Resilience","Forest Restoration","Biodiversity"], geo:"Developing countries", link:"https://mitigation-action.org/call-for-projects-2026/", assignee:null, priority:"medium" },
+  { id:7,  name:"NatGeo & Climate Pledge Storytelling", donor:"National Geographic Society", deadline:"2026-05-25", size:"Up to $100,000", batch:1, high:100000, low:20000, status:"Not Started", themes:["Biodiversity","Climate Resilience","Community Livelihoods"], geo:"All Countries", link:"https://funding.nationalgeographic.org/", assignee:null, priority:"medium" },
+  { id:8,  name:"WFP – School Feeding Systems Uganda", donor:"World Food Programme", deadline:"2026-04-17", size:"Project-based", batch:2, high:500000, low:0, status:"Not Started", themes:["Food Systems","Community Livelihoods","Sustainable Agriculture"], geo:"Uganda only", link:"https://www.unpartnerportal.org/landing/opportunities/", assignee:null, priority:"high" },
+  { id:9,  name:"Dovetail Acceleration Program", donor:"Dovetail Impact Foundation", deadline:"2026-04-28", size:"$100K–$500K", batch:2, high:500000, low:100000, status:"Not Started", themes:["Capacity Building","Biodiversity","Youth Inclusion"], geo:"Africa (Uganda)", link:"https://dovetailimpact.org/acceleration-program", assignee:null, priority:"high" },
+  { id:10, name:"Taronga Field Conservation Grants", donor:"Taronga Zoo Sydney", deadline:"2026-04-20", size:"$10K–$100K", batch:1, high:100000, low:10000, status:"Not Started", themes:["Wildlife Conservation","Biodiversity","Community Livelihoods"], geo:"All Countries", link:"https://taronga.org.au/conservation-and-science/our-actions/field-conservation-grants/applications", assignee:null, priority:"high" },
+  { id:11, name:"Pulitzer Center – ACE Africa Microgrants", donor:"Pulitzer Center", deadline:"2026-04-30", size:"$2,500–$3,000", batch:1, high:3000, low:2500, status:"Not Started", themes:["Biodiversity","Climate Resilience","Community Livelihoods"], geo:"Africa (Uganda)", link:"https://pulitzercenter.submittable.com/submit", assignee:null, priority:"medium" },
+  { id:12, name:"Aberdeen Ideas Fund – Pilot Projects", donor:"Aberdeen Group Charitable Trust", deadline:"2026-05-07", size:"$10K–$100K", batch:1, high:100000, low:10000, status:"Not Started", themes:["Community Livelihoods","Ecosystem Restoration","Circular Economy"], geo:"All Countries", link:"https://www.aberdeenplc.com/en-gb/group-sustainability/aberdeen-group-charitable-trust/apply-for-a-grant-for-your-pilot-project", assignee:null, priority:"medium" },
+  { id:13, name:"Sawfish Conservation Society Grant", donor:"Sawfish Conservation Society", deadline:"2026-04-30", size:"$1K–$10K", batch:1, high:10000, low:1000, status:"Not Started", themes:["Wildlife Conservation","Biodiversity","Ecosystem Restoration"], geo:"All Countries", link:"https://www.sawfishconservationsociety.org/", assignee:null, priority:"low" },
+];
+
+const STATUSES = ["Not Started","In Progress","Documents Gathering","Under Review","Submitted","Awarded","Rejected"];
+
+const daysLeft = (dl) => Math.ceil((new Date(dl) - new Date()) / 86400000);
+
+const urgBadge = (days) => {
+  if (days < 0)  return { bg:"var(--color-background-secondary)", col:"var(--color-text-secondary)", label:"Closed" };
+  if (days <= 7)  return { bg:"#FFEBEE", col:"#C62828", label:`${days}d left` };
+  if (days <= 21) return { bg:"#FFF3E0", col:"#E65100", label:`${days}d left` };
+  if (days <= 60) return { bg:"#FFFDE7", col:"#F57F17", label:`${days}d left` };
+  return { bg:"#E8F5E9", col:"#2E7D32", label:`${days}d left` };
+};
+
+const batchStyle = (b) => ({
+  1: { col:"#E65100", bg:"#FFF3E0", label:"Batch 1 ($1K–100K)" },
+  2: { col:"#1565C0", bg:"#E3F2FD", label:"Batch 2 ($100K–1M)" },
+  3: { col:"#2E7D32", bg:"#E8F5E9", label:"Batch 3 ($1M+)" },
+}[b]);
+
+const statusStyle = (s) => ({
+  "Not Started":         { bg:"var(--color-background-secondary)", col:"var(--color-text-secondary)" },
+  "In Progress":         { bg:"#E3F2FD", col:"#1565C0" },
+  "Documents Gathering": { bg:"#FFF3E0", col:"#E65100" },
+  "Under Review":        { bg:"#F3E5F5", col:"#6A1B9A" },
+  "Submitted":           { bg:"#E8F5E9", col:"#2E7D32" },
+  "Awarded":             { bg:"#1B5E20", col:"#FFFFFF" },
+  "Rejected":            { bg:"#FFEBEE", col:"#C62828" },
+}[s] || { bg:"var(--color-background-secondary)", col:"var(--color-text-secondary)" });
+
+function Avatar({ member, size=32 }) {
+  return React.createElement("div", { style:{ width:size, height:size, borderRadius:8, background:member.color, display:"flex", alignItems:"center", justifyContent:"center", color:"#fff", fontWeight:700, fontSize:size*0.32, flexShrink:0 }}, member.avatar);
+}
+
+function Badge({ children, bg, col, style={} }) {
+  return React.createElement("span", { style:{ padding:"2px 8px", borderRadius:20, background:bg, color:col, fontSize:11, fontWeight:600, display:"inline-block", ...style }}, children);
+}
+
+function App() {
+  const [user, setUser]       = useState(null);
+  const [tab, setTab]         = useState("dashboard");
+  const [grants, setGrants]   = useState(GRANTS);
+  const [detail, setDetail]   = useState(null);
+  const [query, setQuery]     = useState("");
+  const [chat, setChat]       = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [streaming, setStreaming] = useState("");
+  const [notif, setNotif]     = useState(null);
+  const chatEnd = useRef(null);
+
+  const notify = (msg, type="ok") => {
+    setNotif({ msg, type });
+    setTimeout(() => setNotif(null), 3000);
+  };
+
+  const updateGrant = (id, patch) => {
+    setGrants(prev => prev.map(g => g.id === id ? { ...g, ...patch } : g));
+    notify("Saved");
+  };
+
+  useEffect(() => { chatEnd.current?.scrollIntoView({ behavior:"smooth" }); }, [chat, streaming]);
+
+  const urgent = grants.filter(g => { const d = daysLeft(g.deadline); return d >= 0 && d <= 21; });
+  const totalMax = grants.reduce((s,g) => s + g.high, 0);
+
+  const sendToAgent = async () => {
+    if (!query.trim() || loading) return;
+    const q = query.trim();
+    setQuery("");
+    setChat(prev => [...prev, { role:"user", content:q }]);
+    setLoading(true);
+    setStreaming("");
+    let full = "";
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({
+          model:"claude-sonnet-4-6",
+          max_tokens:1000,
+          stream:true,
+          system:`You are the UBF Grants Intelligence Agent for Uganda Biodiversity Fund (UBF).
+
+UBF MISSION: Mobilize and channel resources for biodiversity conservation across Uganda.
+
+THEMATIC PRIORITIES (BFP V4, Jan 2026):
+1. Reducing Degradation of Biodiversity — KBA restoration, wildlife, wetlands, circular economy
+2. Climate Change Resilience — SLM, agroforestry, nature-based solutions, carbon markets
+3. Community Livelihoods — eco-tourism, beekeeping, non-timber products, women/youth inclusion
+
+PROGRAM WINDOWS: Nature Finance and Markets | Resilient Landscapes and Catchments | Nature-Positive Food Systems | Circular Economy and Green Cities | One Health and Bioeconomy
+
+KEY GEOGRAPHY: Uganda's 45 Key Biodiversity Areas including Bwindi Impenetrable NP, Kibale NP, Queen Elizabeth NP, Murchison Falls NP, Albertine Rift, Karamoja, refugee-hosting districts.
+
+GRANTS TEAM:
+- ED (i.amani): Strategic decisions, Batch 3 ($1M+) grants
+- Finance Manager (w.nabatanzi): Budget and financial compliance  
+- Programs Officer (p.musiime): Technical proposals, Batch 1 and 2
+- M&E Officer (d.okullu): Monitoring frameworks, reporting
+- Project Officer (o.atuhaire): Implementation planning
+- Office Assistant (t.otieno): Research and tracking
+
+CURRENT GRANTS: ${grants.map(g => `${g.name} | deadline: ${g.deadline} | batch: ${g.batch} | status: ${g.status} | $${g.low.toLocaleString()}-$${g.high.toLocaleString()}`).join(" || ")}
+
+Respond concisely. Always classify grants by batch. Recommend who on the team should lead. Flag urgent deadlines. Check alignment with UBF's 3 thematic priorities.`,
+          messages:[{ role:"user", content:q }]
+        })
+      });
+      const reader = res.body.getReader();
+      const dec = new TextDecoder();
+      let buf = "";
+      while(true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream:true });
+        const lines = buf.split("\n");
+        buf = lines.pop();
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          const d = line.slice(6);
+          if (d === "[DONE]") continue;
+          try {
+            const p = JSON.parse(d);
+            if (p.type === "content_block_delta" && p.delta?.text) {
+              full += p.delta.text;
+              setStreaming(full);
+            }
+          } catch(_) {}
+        }
+      }
+      setChat(prev => [...prev, { role:"assistant", content:full }]);
+    } catch(e) {
+      setChat(prev => [...prev, { role:"assistant", content:"Agent connection error. Please try again." }]);
+    }
+    setStreaming("");
+    setLoading(false);
+  };
+
+  const c = (style) => React.createElement;
+  const h = React.createElement;
+
+  if (!user) {
+    return h("div", { style:{ minHeight:580, display:"flex", alignItems:"center", justifyContent:"center", background:"linear-gradient(160deg, #1B5E20 0%, #0D47A1 100%)", borderRadius:"var(--border-radius-lg)" }},
+      h("div", { style:{ background:"var(--color-background-primary)", borderRadius:"var(--border-radius-lg)", padding:"36px 32px", width:380, border:"0.5px solid var(--color-border-tertiary)" }},
+        h("div", { style:{ textAlign:"center", marginBottom:24 }},
+          h("div", { style:{ fontSize:36, marginBottom:8 }}, "🌿"),
+          h("div", { style:{ fontSize:18, fontWeight:500, color:"var(--color-text-primary)" }}, "UBF Grants Platform"),
+          h("div", { style:{ fontSize:12, color:"var(--color-text-secondary)", marginTop:4 }}, "Uganda Biodiversity Fund — Intelligence System")
+        ),
+        h("div", { style:{ fontSize:11, color:"var(--color-text-secondary)", marginBottom:10, textTransform:"uppercase", letterSpacing:"0.5px" }}, "Sign in as"),
+        ...TEAM.map(u => h("button", {
+          key:u.id, onClick:() => { setUser(u); notify(`Welcome, ${u.name.split(".")[1]?.trim() || u.name}!`); },
+          style:{ width:"100%", display:"flex", alignItems:"center", gap:10, padding:"10px 12px", border:"0.5px solid var(--color-border-tertiary)", borderRadius:"var(--border-radius-md)", background:"var(--color-background-primary)", cursor:"pointer", marginBottom:6, textAlign:"left" }
+        },
+          h(Avatar, { member:u, size:34 }),
+          h("div", { style:{ flex:1 }},
+            h("div", { style:{ fontSize:13, fontWeight:500, color:"var(--color-text-primary)" }}, u.name),
+            h("div", { style:{ fontSize:11, color:"var(--color-text-secondary)" }}, u.role)
+          ),
+          h("span", { style:{ color:"var(--color-text-tertiary)", fontSize:14 }}, "→")
+        ))
+      )
+    );
+  }
+
+  const TABS = [
+    { id:"dashboard", icon:"📊", label:"Dashboard" },
+    { id:"grants",    icon:"📋", label:"Tracker" },
+    { id:"agent",     icon:"🤖", label:"AI Agent" },
+    { id:"pipeline",  icon:"📅", label:"Pipeline" },
+    { id:"team",      icon:"👥", label:"Team" },
+  ];
+
+  return h("div", { style:{ minHeight:580, display:"flex", flexDirection:"column", background:"var(--color-background-tertiary)", borderRadius:"var(--border-radius-lg)", overflow:"hidden" }},
+
+    notif && h("div", { style:{ position:"absolute", top:12, right:12, zIndex:999, background: notif.type === "ok" ? "#1B5E20" : "#C62828", color:"#fff", padding:"8px 16px", borderRadius:"var(--border-radius-md)", fontSize:12, fontWeight:500 }}, notif.msg),
+
+    h("div", { style:{ display:"flex", borderBottom:"0.5px solid var(--color-border-tertiary)", background:"var(--color-background-primary)", padding:"0 16px", alignItems:"center", gap:4 }},
+      h("div", { style:{ fontSize:16, marginRight:8, padding:"10px 0" }}, "🌿"),
+      h("div", { style:{ fontSize:13, fontWeight:500, color:"var(--color-text-primary)", marginRight:16 }}, "UBF Grants"),
+      ...TABS.map(t => h("button", {
+        key:t.id, onClick:() => { setTab(t.id); setDetail(null); },
+        style:{ padding:"12px 12px", background:"transparent", border:"none", borderBottom: tab===t.id ? "2px solid #2E7D32" : "2px solid transparent", color: tab===t.id ? "#2E7D32" : "var(--color-text-secondary)", cursor:"pointer", fontSize:12, fontWeight: tab===t.id ? 500 : 400, display:"flex", alignItems:"center", gap:5 }
+      }, t.icon, " ", t.label)),
+      h("div", { style:{ marginLeft:"auto", display:"flex", alignItems:"center", gap:8 }},
+        h(Avatar, { member:user, size:28 }),
+        h("div", { style:{ fontSize:11, color:"var(--color-text-secondary)" }}, user.name),
+        h("button", { onClick:() => setUser(null), style:{ fontSize:11, color:"var(--color-text-secondary)", background:"transparent", border:"0.5px solid var(--color-border-tertiary)", borderRadius:6, padding:"3px 8px", cursor:"pointer" }}, "switch")
+      )
+    ),
+
+    h("div", { style:{ flex:1, overflowY:"auto", padding:20 }},
+
+      tab === "dashboard" && h("div", null,
+        h("div", { style:{ marginBottom:16 }},
+          h("div", { style:{ fontSize:16, fontWeight:500, color:"var(--color-text-primary)" }}, `Welcome back, ${user.name.split(".")[1]?.trim() || user.name} 👋`),
+          h("div", { style:{ fontSize:12, color:"var(--color-text-secondary)", marginTop:2 }}, "UBF Grants Intelligence Overview")
+        ),
+        h("div", { style:{ display:"grid", gridTemplateColumns:"repeat(4, minmax(0,1fr))", gap:10, marginBottom:16 }},
+          ...[
+            { label:"Total Grants", value:grants.length, icon:"📋", bg:"#E8F5E9", col:"#1B5E20" },
+            { label:"Potential Funding", value:`$${Math.round(totalMax/1000000)}M+`, icon:"💰", bg:"#E3F2FD", col:"#0D47A1" },
+            { label:"Urgent (≤21 days)", value:urgent.length, icon:"🔴", bg:"#FFEBEE", col:"#C62828" },
+            { label:"Batch 3 ($1M+)", value:grants.filter(g=>g.batch===3).length, icon:"⭐", bg:"#E8F5E9", col:"#2E7D32" },
+          ].map((k,i) => h("div", { key:i, style:{ background:"var(--color-background-primary)", borderRadius:"var(--border-radius-md)", padding:"14px 16px", border:"0.5px solid var(--color-border-tertiary)" }},
+            h("div", { style:{ display:"flex", justifyContent:"space-between", alignItems:"center" }},
+              h("div", null,
+                h("div", { style:{ fontSize:10, color:"var(--color-text-secondary)", textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:4 }}, k.label),
+                h("div", { style:{ fontSize:22, fontWeight:500, color:k.col }}, k.value)
+              ),
+              h("div", { style:{ width:36, height:36, borderRadius:"var(--border-radius-md)", background:k.bg, display:"flex", alignItems:"center", justifyContent:"center", fontSize:16 }}, k.icon)
+            )
+          ))
+        ),
+        h("div", { style:{ display:"grid", gridTemplateColumns:"minmax(0,1.3fr) minmax(0,1fr)", gap:12 }},
+          h("div", { style:{ background:"var(--color-background-primary)", borderRadius:"var(--border-radius-md)", padding:16, border:"0.5px solid var(--color-border-tertiary)" }},
+            h("div", { style:{ fontSize:13, fontWeight:500, color:"var(--color-text-primary)", marginBottom:12 }}, "⚠️ Urgent Deadlines"),
+            urgent.length === 0
+              ? h("div", { style:{ color:"var(--color-text-secondary)", fontSize:12, textAlign:"center", padding:"20px 0" }}, "No urgent deadlines")
+              : urgent.sort((a,b)=>new Date(a.deadline)-new Date(b.deadline)).map(g => {
+                  const ub = urgBadge(daysLeft(g.deadline));
+                  const bs = batchStyle(g.batch);
+                  return h("div", { key:g.id, onClick:()=>{ setDetail(g); setTab("grants"); }, style:{ display:"flex", alignItems:"center", gap:8, padding:"8px 0", borderBottom:"0.5px solid var(--color-border-tertiary)", cursor:"pointer" }},
+                    h(Badge, { bg:ub.bg, col:ub.col }, ub.label),
+                    h("div", { style:{ flex:1, minWidth:0 }},
+                      h("div", { style:{ fontSize:12, fontWeight:500, color:"var(--color-text-primary)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}, g.name),
+                      h("div", { style:{ fontSize:10, color:"var(--color-text-secondary)" }}, g.donor)
+                    ),
+                    h(Badge, { bg:bs.bg, col:bs.col }, `B${g.batch}`)
+                  );
+                })
+          ),
+          h("div", { style:{ background:"var(--color-background-primary)", borderRadius:"var(--border-radius-md)", padding:16, border:"0.5px solid var(--color-border-tertiary)" }},
+            h("div", { style:{ fontSize:13, fontWeight:500, color:"var(--color-text-primary)", marginBottom:12 }}, "💰 Funding by Batch"),
+            ...[1,2,3].map(b => {
+              const bg = grants.filter(g=>g.batch===b);
+              const mx = bg.reduce((s,g)=>s+g.high,0);
+              const pct = totalMax > 0 ? Math.round(mx/totalMax*100) : 0;
+              const bs = batchStyle(b);
+              return h("div", { key:b, style:{ marginBottom:14 }},
+                h("div", { style:{ display:"flex", justifyContent:"space-between", marginBottom:4 }},
+                  h("span", { style:{ fontSize:11, color:bs.col, fontWeight:500 }}, bs.label),
+                  h("span", { style:{ fontSize:11, color:"var(--color-text-secondary)" }}, `${bg.length} · $${Math.round(mx/1000000)}M`)
+                ),
+                h("div", { style:{ height:6, background:"var(--color-background-secondary)", borderRadius:3, overflow:"hidden" }},
+                  h("div", { style:{ height:"100%", width:`${pct}%`, background:bs.col, borderRadius:3 }})
+                )
+              );
+            }),
+            h("div", { style:{ marginTop:14, padding:"10px 12px", background:"#E8F5E9", borderRadius:"var(--border-radius-md)" }},
+              h("div", { style:{ fontSize:10, color:"#2E7D32" }}, "Total maximum potential"),
+              h("div", { style:{ fontSize:20, fontWeight:500, color:"#1B5E20" }}, `$${Math.round(totalMax/1000000)}M+`)
+            )
+          )
+        )
+      ),
+
+      tab === "grants" && h("div", null,
+        detail ? h("div", null,
+          h("button", { onClick:()=>setDetail(null), style:{ fontSize:12, padding:"6px 12px", marginBottom:16, borderRadius:"var(--border-radius-md)", border:"0.5px solid var(--color-border-tertiary)", background:"var(--color-background-primary)", cursor:"pointer", color:"var(--color-text-secondary)" }}, "← Back"),
+          h("div", { style:{ background:"var(--color-background-primary)", borderRadius:"var(--border-radius-md)", padding:20, border:"0.5px solid var(--color-border-tertiary)" }},
+            h("div", { style:{ display:"flex", gap:8, marginBottom:10 }},
+              h(Badge, { bg:batchStyle(detail.batch).bg, col:batchStyle(detail.batch).col }, batchStyle(detail.batch).label),
+              h(Badge, { bg:urgBadge(daysLeft(detail.deadline)).bg, col:urgBadge(daysLeft(detail.deadline)).col }, urgBadge(daysLeft(detail.deadline)).label)
+            ),
+            h("div", { style:{ fontSize:15, fontWeight:500, color:"var(--color-text-primary)", marginBottom:4 }}, detail.name),
+            h("div", { style:{ fontSize:12, color:"var(--color-text-secondary)", marginBottom:16 }}, detail.donor),
+            h("div", { style:{ display:"grid", gridTemplateColumns:"repeat(3,minmax(0,1fr))", gap:10, marginBottom:16 }},
+              ...[
+                { label:"Deadline", value:detail.deadline },
+                { label:"Grant Size", value:detail.size },
+                { label:"Geography", value:detail.geo },
+              ].map((f,i) => h("div", { key:i, style:{ padding:12, background:"var(--color-background-secondary)", borderRadius:"var(--border-radius-md)" }},
+                h("div", { style:{ fontSize:10, color:"var(--color-text-secondary)", textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:3 }}, f.label),
+                h("div", { style:{ fontSize:12, fontWeight:500, color:"var(--color-text-primary)" }}, f.value)
+              ))
+            ),
+            h("div", { style:{ marginBottom:14 }},
+              h("div", { style:{ fontSize:10, color:"var(--color-text-secondary)", textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:6 }}, "Thematic Areas"),
+              h("div", { style:{ display:"flex", flexWrap:"wrap", gap:5 }},
+                ...detail.themes.map(t => h(Badge, { key:t, bg:"#E8F5E9", col:"#2E7D32" }, t))
+              )
+            ),
+            h("div", { style:{ display:"grid", gridTemplateColumns:"minmax(0,1fr) minmax(0,1fr)", gap:12, marginBottom:14 }},
+              h("div", null,
+                h("div", { style:{ fontSize:10, color:"var(--color-text-secondary)", textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:5 }}, "Status"),
+                h("select", { value:detail.status, onChange:e=>{ updateGrant(detail.id,{status:e.target.value}); setDetail(p=>({...p,status:e.target.value})); }, style:{ width:"100%", fontSize:12 }},
+                  ...STATUSES.map(s => h("option",{key:s,value:s},s))
+                )
+              ),
+              h("div", null,
+                h("div", { style:{ fontSize:10, color:"var(--color-text-secondary)", textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:5 }}, "Lead Person"),
+                h("select", { value:detail.assignee||"", onChange:e=>{ updateGrant(detail.id,{assignee:e.target.value}); setDetail(p=>({...p,assignee:e.target.value})); }, style:{ width:"100%", fontSize:12 }},
+                  h("option",{value:""},"Unassigned"),
+                  ...TEAM.map(t => h("option",{key:t.id,value:t.email},`${t.name} — ${t.role}`))
+                )
+              )
+            ),
+            h("a", { href:detail.link, target:"_blank", rel:"noopener noreferrer", style:{ display:"inline-flex", alignItems:"center", gap:6, padding:"9px 16px", background:"#1B5E20", color:"#fff", borderRadius:"var(--border-radius-md)", textDecoration:"none", fontSize:12, fontWeight:500 }}, "🔗 Open Official Grant Page")
+          )
+        ) : h("div", null,
+          h("div", { style:{ fontSize:14, fontWeight:500, color:"var(--color-text-primary)", marginBottom:14 }}, "📋 Grant Tracker"),
+          h("div", { style:{ background:"var(--color-background-primary)", borderRadius:"var(--border-radius-md)", border:"0.5px solid var(--color-border-tertiary)", overflow:"hidden" }},
+            h("div", { style:{ display:"grid", gridTemplateColumns:"minmax(0,2fr) 90px 90px 110px 80px", gap:8, padding:"10px 14px", borderBottom:"0.5px solid var(--color-border-tertiary)", fontSize:10, color:"var(--color-text-secondary)", textTransform:"uppercase", letterSpacing:"0.5px" }},
+              "Grant", "Deadline", "Batch", "Status", ""
+            ),
+            ...grants.map(g => {
+              const ub = urgBadge(daysLeft(g.deadline));
+              const bs = batchStyle(g.batch);
+              const sc = statusStyle(g.status);
+              return h("div", { key:g.id, style:{ display:"grid", gridTemplateColumns:"minmax(0,2fr) 90px 90px 110px 80px", gap:8, padding:"10px 14px", borderBottom:"0.5px solid var(--color-border-tertiary)", alignItems:"center" }},
+                h("div", null,
+                  h("div", { style:{ fontSize:12, fontWeight:500, color:"var(--color-text-primary)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}, g.name),
+                  h("div", { style:{ fontSize:10, color:"var(--color-text-secondary)" }}, g.donor)
+                ),
+                h(Badge, { bg:ub.bg, col:ub.col }, ub.label),
+                h(Badge, { bg:bs.bg, col:bs.col }, `B${g.batch}`),
+                h(Badge, { bg:sc.bg, col:sc.col }, g.status),
+                h("button", { onClick:()=>setDetail(g), style:{ fontSize:11, padding:"5px 10px", cursor:"pointer", borderRadius:"var(--border-radius-md)", border:"0.5px solid var(--color-border-tertiary)", background:"var(--color-background-secondary)", color:"var(--color-text-secondary)" }}, "View →")
+              );
+            })
+          )
+        )
+      ),
+
+      tab === "agent" && h("div", null,
+        h("div", { style:{ fontSize:14, fontWeight:500, color:"var(--color-text-primary)", marginBottom:6 }}, "🤖 UBF AI Grants Agent"),
+        h("div", { style:{ fontSize:12, color:"var(--color-text-secondary)", marginBottom:14 }}, "Ask the agent to find grants, analyse alignment with UBF priorities, or advise on applications."),
+        h("div", { style:{ display:"flex", flexWrap:"wrap", gap:6, marginBottom:14 }},
+          ...[
+            "Which grants should we prioritise this week?",
+            "Find grants for Resilient Landscapes in Uganda",
+            "Who should lead the EU/AICS application?",
+            "Analyse our Batch 3 pipeline",
+          ].map(p => h("button", { key:p, onClick:()=>setQuery(p), style:{ fontSize:11, padding:"5px 11px", borderRadius:20, border:"0.5px solid #C8E6C9", background:"var(--color-background-primary)", color:"#2E7D32", cursor:"pointer" }}, p))
+        ),
+        h("div", { style:{ background:"var(--color-background-primary)", borderRadius:"var(--border-radius-md)", border:"0.5px solid var(--color-border-tertiary)", overflow:"hidden" }},
+          h("div", { style:{ height:340, overflowY:"auto", padding:16 }},
+            chat.length === 0 && !loading && h("div", { style:{ textAlign:"center", padding:"60px 0", color:"var(--color-text-secondary)" }},
+              h("div", { style:{ fontSize:32, marginBottom:8 }}, "🌿"),
+              h("div", { style:{ fontSize:13, fontWeight:500, color:"var(--color-text-primary)" }}, "UBF Grants Intelligence Agent"),
+              h("div", { style:{ fontSize:12, marginTop:4 }}, "Ask me anything about grants, alignment, or team priorities.")
+            ),
+            ...chat.map((m,i) => h("div", { key:i, style:{ marginBottom:14, display:"flex", gap:10, flexDirection: m.role==="user" ? "row-reverse" : "row" }},
+              h("div", { style:{ width:28, height:28, borderRadius:8, background: m.role==="user" ? user.color : "#1B5E20", display:"flex", alignItems:"center", justifyContent:"center", color:"#fff", fontSize: m.role==="user" ? 10 : 14, fontWeight:700, flexShrink:0 }},
+                m.role==="user" ? user.avatar : "🌿"
+              ),
+              h("div", { style:{ maxWidth:"80%", padding:"10px 14px", borderRadius: m.role==="user" ? "14px 4px 14px 14px" : "4px 14px 14px 14px", background: m.role==="user" ? user.color : "var(--color-background-secondary)", color: m.role==="user" ? "#fff" : "var(--color-text-primary)", fontSize:12, lineHeight:1.6, whiteSpace:"pre-wrap" }},
+                m.content
+              )
+            )),
+            loading && h("div", { style:{ display:"flex", gap:10 }},
+              h("div", { style:{ width:28, height:28, borderRadius:8, background:"#1B5E20", display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, flexShrink:0 }}, "🌿"),
+              streaming
+                ? h("div", { style:{ padding:"10px 14px", background:"var(--color-background-secondary)", borderRadius:"4px 14px 14px 14px", fontSize:12, lineHeight:1.6, whiteSpace:"pre-wrap", color:"var(--color-text-primary)", flex:1 }}, streaming)
+                : h("div", { style:{ padding:"10px 14px", background:"var(--color-background-secondary)", borderRadius:"4px 14px 14px 14px", color:"var(--color-text-secondary)", fontSize:12 }}, "Searching and analysing...")
+            ),
+            h("div", { ref:chatEnd })
+          ),
+          h("div", { style:{ borderTop:"0.5px solid var(--color-border-tertiary)", padding:"12px 14px", display:"flex", gap:8 }},
+            h("input", { value:query, onChange:e=>setQuery(e.target.value), onKeyDown:e=>e.key==="Enter" && sendToAgent(), placeholder:"Ask the agent...", style:{ flex:1, fontSize:12 }}),
+            h("button", { onClick:sendToAgent, disabled:loading||!query.trim(), style:{ padding:"8px 16px", background: loading ? "var(--color-background-secondary)" : "#1B5E20", color: loading ? "var(--color-text-secondary)" : "#fff", border:"none", borderRadius:"var(--border-radius-md)", fontSize:12, fontWeight:500, cursor: loading ? "not-allowed" : "pointer" }},
+              loading ? "..." : "Send"
+            )
+          )
+        )
+      ),
+
+      tab === "pipeline" && h("div", null,
+        h("div", { style:{ fontSize:14, fontWeight:500, color:"var(--color-text-primary)", marginBottom:16 }}, "📅 Grant Pipeline Calendar"),
+        ...["Apr 2026","May 2026","Jun 2026","Jul–Dec 2026","Rolling"].map(month => {
+          const mg = grants.filter(g => {
+            const d = new Date(g.deadline);
+            const m = { "Apr 2026":3, "May 2026":4, "Jun 2026":5 }[month];
+            if (month === "Rolling") return g.deadline === "2026-12-31";
+            if (month === "Jul–Dec 2026") return d.getMonth()>=6 && d.getFullYear()===2026 && g.deadline!=="2026-12-31";
+            return d.getMonth()===m && d.getFullYear()===2026;
+          });
+          if (mg.length === 0) return null;
+          return h("div", { key:month, style:{ marginBottom:20 }},
+            h("div", { style:{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }},
+              h("span", { style:{ fontSize:11, fontWeight:500, color:"var(--color-text-secondary)", textTransform:"uppercase", letterSpacing:"0.5px" }}, month),
+              h("div", { style:{ flex:1, height:"0.5px", background:"var(--color-border-tertiary)" }}),
+              h("span", { style:{ fontSize:11, color:"var(--color-text-secondary)" }}, `${mg.length} grant${mg.length>1?"s":""}`)
+            ),
+            h("div", { style:{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(180px,1fr))", gap:10 }},
+              ...mg.map(g => {
+                const ub = urgBadge(daysLeft(g.deadline));
+                const bs = batchStyle(g.batch);
+                return h("div", { key:g.id, onClick:()=>{ setDetail(g); setTab("grants"); }, style:{ background:"var(--color-background-primary)", borderRadius:"var(--border-radius-md)", padding:"12px 14px", border:`0.5px solid var(--color-border-tertiary)`, borderLeft:`3px solid ${bs.col}`, cursor:"pointer" }},
+                  h("div", { style:{ display:"flex", justifyContent:"space-between", marginBottom:6 }},
+                    h(Badge, { bg:ub.bg, col:ub.col }, ub.label),
+                    h(Badge, { bg:bs.bg, col:bs.col }, `B${g.batch}`)
+                  ),
+                  h("div", { style:{ fontSize:12, fontWeight:500, color:"var(--color-text-primary)", lineHeight:1.3, marginBottom:3 }}, g.name),
+                  h("div", { style:{ fontSize:10, color:"var(--color-text-secondary)" }}, g.size)
+                );
+              })
+            )
+          );
+        })
+      ),
+
+      tab === "team" && h("div", null,
+        h("div", { style:{ fontSize:14, fontWeight:500, color:"var(--color-text-primary)", marginBottom:14 }}, "👥 Grants Team"),
+        h("div", { style:{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(180px,1fr))", gap:12 }},
+          ...TEAM.map(m => {
+            const assigned = grants.filter(g => g.assignee === m.email);
+            const urgentA  = assigned.filter(g => { const d=daysLeft(g.deadline); return d>=0&&d<=21; });
+            return h("div", { key:m.id, style:{ background:"var(--color-background-primary)", borderRadius:"var(--border-radius-md)", padding:16, border:"0.5px solid var(--color-border-tertiary)" }},
+              h("div", { style:{ display:"flex", alignItems:"center", gap:10, marginBottom:12 }},
+                h(Avatar, { member:m, size:40 }),
+                h("div", null,
+                  h("div", { style:{ fontSize:13, fontWeight:500, color:"var(--color-text-primary)" }}, m.name),
+                  h("div", { style:{ fontSize:10, color:"var(--color-text-secondary)" }}, m.role)
+                )
+              ),
+              h("div", { style:{ fontSize:10, color:"var(--color-text-tertiary)", marginBottom:10, wordBreak:"break-all" }}, m.email),
+              h("div", { style:{ display:"flex", gap:8 }},
+                h("div", { style:{ flex:1, padding:"8px", background:"var(--color-background-secondary)", borderRadius:"var(--border-radius-md)", textAlign:"center" }},
+                  h("div", { style:{ fontSize:16, fontWeight:500, color:"#1B5E20" }}, assigned.length),
+                  h("div", { style:{ fontSize:10, color:"var(--color-text-secondary)" }}, "Assigned")
+                ),
+                h("div", { style:{ flex:1, padding:"8px", background: urgentA.length>0 ? "#FFEBEE" : "var(--color-background-secondary)", borderRadius:"var(--border-radius-md)", textAlign:"center" }},
+                  h("div", { style:{ fontSize:16, fontWeight:500, color: urgentA.length>0 ? "#C62828" : "var(--color-text-secondary)" }}, urgentA.length),
+                  h("div", { style:{ fontSize:10, color: urgentA.length>0 ? "#C62828" : "var(--color-text-secondary)" }}, "Urgent")
+                )
+              )
+            );
+          })
+        )
+      )
+    )
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("ubf-root")).render(React.createElement(App));
+</script>
